@@ -1,0 +1,1294 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>gritv3 Output Evaluator</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f7f7f5;
+      --surface: #ffffff;
+      --surface-alt: #f0f4f8;
+      --field-bg: #fbfcfd;
+      --button-bg: #ffffff;
+      --topbar-bg: rgba(247, 247, 245, 0.96);
+      --ink: #202124;
+      --muted: #626a73;
+      --line: #d7dde4;
+      --strong-line: #a9b4c0;
+      --accent: #0f766e;
+      --accent-dark: #115e59;
+      --accent-contrast: #ffffff;
+      --pass: #137333;
+      --pass-soft: #e7f4ea;
+      --fail: #b42318;
+      --fail-soft: #fff0ed;
+      --warn: #a15c00;
+      --warn-soft: #fff6df;
+      --shadow: 0 12px 30px rgba(28, 35, 45, 0.08);
+      --grid-gap: 1px;
+      --cell-size: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    button,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+    }
+
+    a {
+      text-decoration: none;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--line);
+      background: var(--topbar-bg);
+      backdrop-filter: blur(10px);
+    }
+
+    .topbar-side {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .title-block {
+      min-width: 0;
+      display: grid;
+      gap: 3px;
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin: 0;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      font-size: 1.15rem;
+      line-height: 1.2;
+    }
+
+    .subtitle,
+    .status,
+    .muted,
+    .panel-meta,
+    .metric-label {
+      color: var(--muted);
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+    }
+
+    .status {
+      min-height: 1.25rem;
+      font-size: 0.92rem;
+      text-align: right;
+    }
+
+    .status.error {
+      color: var(--fail);
+      font-weight: 700;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+      padding: 18px;
+    }
+
+    .input-column,
+    .results-column {
+      min-width: 0;
+      display: grid;
+      gap: 14px;
+    }
+
+    .panel,
+    .grid-panel,
+    .metric,
+    .empty-state {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .panel {
+      overflow: hidden;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface-alt);
+    }
+
+    .panel-title {
+      min-width: 0;
+      display: grid;
+      gap: 2px;
+    }
+
+    .panel-title strong {
+      font-size: 0.98rem;
+    }
+
+    .panel-meta {
+      font-size: 0.8rem;
+      white-space: nowrap;
+    }
+
+    .editor-wrap {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 230px;
+      resize: vertical;
+      padding: 11px 12px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--field-bg);
+      color: var(--ink);
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: 0.83rem;
+      line-height: 1.45;
+      tab-size: 2;
+    }
+
+    textarea:focus {
+      outline: 2px solid rgba(15, 118, 110, 0.2);
+      border-color: var(--accent);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      padding: 0 12px 12px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-height: 38px;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--button-bg);
+      color: var(--ink);
+      cursor: pointer;
+      line-height: 1.1;
+      transition: border-color 120ms ease, background 120ms ease, color 120ms ease;
+      user-select: none;
+    }
+
+    .button:hover {
+      border-color: var(--accent);
+      color: var(--accent-dark);
+    }
+
+    .button.primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: var(--accent-contrast);
+      font-weight: 700;
+    }
+
+    .button.primary:hover {
+      background: var(--accent-dark);
+      color: var(--accent-contrast);
+    }
+
+    .button.ghost {
+      background: transparent;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .metric {
+      min-width: 0;
+      display: grid;
+      gap: 4px;
+      padding: 12px;
+      box-shadow: none;
+    }
+
+    .metric-value {
+      font-size: 1.3rem;
+      font-weight: 780;
+      line-height: 1.1;
+    }
+
+    .metric-label {
+      font-size: 0.78rem;
+    }
+
+    .metric.pass {
+      border-color: #9bd3ac;
+      background: var(--pass-soft);
+      color: var(--pass);
+    }
+
+    .metric.fail {
+      border-color: #ffc1b6;
+      background: var(--fail-soft);
+      color: var(--fail);
+    }
+
+    .section {
+      display: grid;
+      gap: 10px;
+    }
+
+    .section-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 2px 2px 0;
+    }
+
+    .section-heading h2 {
+      font-size: 1rem;
+    }
+
+    .examples,
+    .tests {
+      display: grid;
+      gap: 14px;
+    }
+
+    .example,
+    .test-case {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .case-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .case-title {
+      min-width: 0;
+      font-size: 0.95rem;
+      font-weight: 750;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 26px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+
+    .badge.pass {
+      border-color: #9bd3ac;
+      background: var(--pass-soft);
+      color: var(--pass);
+    }
+
+    .badge.fail {
+      border-color: #ffc1b6;
+      background: var(--fail-soft);
+      color: var(--fail);
+    }
+
+    .badge.warn {
+      border-color: #ffd27c;
+      background: var(--warn-soft);
+      color: var(--warn);
+    }
+
+    .grid-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      align-items: start;
+    }
+
+    .test-case .grid-row {
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+
+    .grid-panel {
+      min-width: 0;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      overflow: hidden;
+      box-shadow: none;
+    }
+
+    .grid-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 9px;
+      border-bottom: 1px solid var(--line);
+      background: var(--field-bg);
+    }
+
+    .grid-panel-title {
+      min-width: 0;
+      font-size: 0.8rem;
+      font-weight: 750;
+    }
+
+    .grid-size {
+      color: var(--muted);
+      font-size: 0.72rem;
+      white-space: nowrap;
+    }
+
+    .grid-scroll {
+      overflow: auto;
+      padding: 10px;
+      min-height: 72px;
+      max-height: 390px;
+    }
+
+    .arc-grid {
+      display: grid;
+      width: max-content;
+      max-width: 100%;
+      border: 1px solid #7b8490;
+      background: #7b8490;
+      gap: var(--grid-gap);
+    }
+
+    .cell {
+      position: relative;
+      width: var(--cell-size);
+      height: var(--cell-size);
+      background: var(--cell-color);
+    }
+
+    .cell.missing,
+    .cell.extra {
+      background-image:
+        linear-gradient(45deg, rgba(180, 35, 24, 0.24) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(180, 35, 24, 0.24) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(180, 35, 24, 0.24) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(180, 35, 24, 0.24) 75%);
+      background-size: 10px 10px;
+      background-position: 0 0, 0 5px, 5px -5px, -5px 0;
+    }
+
+    .cell.diff::after {
+      content: "";
+      position: absolute;
+      inset: 2px;
+      border: 2px solid #e11d48;
+      border-radius: 2px;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.75);
+    }
+
+    .diff-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 0.72rem;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .legend-swatch {
+      width: 13px;
+      height: 13px;
+      border: 2px solid #e11d48;
+      border-radius: 2px;
+      background: var(--button-bg);
+    }
+
+    .empty-state {
+      display: grid;
+      place-items: center;
+      min-height: 300px;
+      padding: 24px;
+      color: var(--muted);
+      text-align: center;
+      box-shadow: none;
+    }
+
+    .error-list {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--fail);
+      font-size: 0.88rem;
+      line-height: 1.45;
+    }
+
+    .case-notes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #11161b;
+        --surface: #1b242c;
+        --surface-alt: #202b34;
+        --field-bg: #121a21;
+        --button-bg: #1b242c;
+        --topbar-bg: rgba(17, 22, 27, 0.94);
+        --ink: #ecf2f6;
+        --muted: #9daab6;
+        --line: #30404c;
+        --strong-line: #536472;
+        --accent: #2dd4bf;
+        --accent-dark: #5eead4;
+        --accent-contrast: #06211e;
+        --pass: #86efac;
+        --pass-soft: #143322;
+        --fail: #fb7185;
+        --fail-soft: #361b22;
+        --warn: #fbbf24;
+        --warn-soft: #332911;
+        --shadow: 0 20px 42px rgba(0, 0, 0, 0.32);
+      }
+    }
+
+    @media (max-width: 980px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      textarea {
+        min-height: 170px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .topbar {
+        align-items: start;
+        flex-direction: column;
+      }
+
+      .status {
+        text-align: left;
+      }
+
+      .workspace {
+        padding: 12px;
+      }
+
+      .summary {
+        grid-template-columns: 1fr;
+      }
+
+      .grid-row,
+      .test-case .grid-row {
+        grid-template-columns: 1fr;
+      }
+
+      .actions {
+        flex-direction: column;
+      }
+
+      .button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar" aria-label="gritv3 evaluator header">
+      <div class="title-block">
+        <h1>gritv3 Output Evaluator</h1>
+        <div class="subtitle">Paste a task and strict JSON prediction, then compare against the hidden-answer field.</div>
+      </div>
+      <div class="topbar-side">
+        <nav class="topbar-actions" aria-label="Evaluator navigation">
+          <a class="button ghost" href="/">Home</a>
+          <a class="button ghost" href="/creator.html">Creator</a>
+          <a class="button ghost" href="/studio.html">Weighting Studio</a>
+          <a class="button ghost" href="/results.html">Results</a>
+          <a class="button ghost" href="/human.html">Human Benchmark</a>
+        </nav>
+        <div id="status" class="status" role="status" aria-live="polite">Ready.</div>
+      </div>
+    </header>
+
+    <section class="workspace" aria-label="gritv3 evaluator workspace">
+      <div class="input-column">
+        <article class="panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <strong>Task JSON</strong>
+              <span class="muted">Requires train and test arrays with output answers.</span>
+            </div>
+          </div>
+          <div class="editor-wrap">
+            <label class="sr-only" for="taskJson">Task JSON</label>
+            <textarea id="taskJson" spellcheck="false" autocomplete="off" placeholder='{"train":[{"input":[[1]],"output":[[1]]}],"test":[{"input":[[1]],"output":[[1]]}]}'></textarea>
+          </div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <strong>Prediction JSON</strong>
+              <span class="muted">Use a raw grid, {"output": grid}, or {"outputs": [grid]}.</span>
+            </div>
+          </div>
+          <div class="editor-wrap">
+            <label class="sr-only" for="predictionJson">Prediction JSON</label>
+            <textarea id="predictionJson" spellcheck="false" autocomplete="off" placeholder='{"output":[[1]]}'></textarea>
+          </div>
+          <div class="actions">
+            <button class="button primary" id="evaluateButton" type="button">Evaluate</button>
+            <button class="button ghost" id="clearButton" type="button">Clear</button>
+          </div>
+        </article>
+      </div>
+
+      <div class="results-column">
+        <section class="summary" id="summary" aria-label="Evaluation summary">
+          <div class="metric">
+            <div class="metric-value">-</div>
+            <div class="metric-label">Tests Passed</div>
+          </div>
+          <div class="metric">
+            <div class="metric-value">-</div>
+            <div class="metric-label">Cell Accuracy</div>
+          </div>
+          <div class="metric">
+            <div class="metric-value">-</div>
+            <div class="metric-label">Mismatches</div>
+          </div>
+          <div class="metric">
+            <div class="metric-value">-</div>
+            <div class="metric-label">Dimensions</div>
+          </div>
+        </section>
+
+        <section id="errors" aria-label="Validation errors"></section>
+
+        <section class="section" aria-label="Training examples">
+          <div class="section-heading">
+            <h2>Train Examples</h2>
+            <span class="panel-meta" id="trainCount">0 examples</span>
+          </div>
+          <div class="examples" id="trainExamples"></div>
+        </section>
+
+        <section class="section" aria-label="Test results">
+          <div class="section-heading">
+            <h2>Test Results</h2>
+            <span class="panel-meta" id="testCount">0 tests</span>
+          </div>
+          <div class="tests" id="testResults">
+            <div class="empty-state">Paste valid task and prediction JSON to render comparisons.</div>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const COLOR_MAP = {
+        "0": { name: "Empty", color: "#ffffff" },
+        "1": { name: "Gray", color: "#9ca3af" },
+        "2": { name: "Red", color: "#ef4444" },
+        "3": { name: "Blue", color: "#2563eb" },
+        "4": { name: "Yellow", color: "#facc15" },
+        "5": { name: "Green", color: "#16a34a" },
+        "6": { name: "Purple", color: "#9333ea" },
+        "7": { name: "Brown", color: "#92400e" },
+        "8": { name: "Orange", color: "#f97316" },
+        "9": { name: "Black", color: "#111827" }
+      };
+
+      const allowedCodes = new Set(Object.keys(COLOR_MAP));
+      const EVALUATOR_HANDOFF_KEY = "grit3.creator.evaluatorTask.v1";
+
+      const dom = {
+        taskJson: document.getElementById("taskJson"),
+        predictionJson: document.getElementById("predictionJson"),
+        evaluateButton: document.getElementById("evaluateButton"),
+        clearButton: document.getElementById("clearButton"),
+        status: document.getElementById("status"),
+        summary: document.getElementById("summary"),
+        errors: document.getElementById("errors"),
+        trainCount: document.getElementById("trainCount"),
+        testCount: document.getElementById("testCount"),
+        trainExamples: document.getElementById("trainExamples"),
+        testResults: document.getElementById("testResults")
+      };
+
+      dom.evaluateButton.addEventListener("click", evaluate);
+      dom.clearButton.addEventListener("click", clearAll);
+      loadCreatorHandoff();
+
+      function evaluate() {
+        clearErrors();
+
+        try {
+          const task = parseTask(readJson(dom.taskJson.value, "Task JSON"));
+          const predictions = parsePredictions(readJson(dom.predictionJson.value, "Prediction JSON"), task.test.length);
+          const results = task.test.map((testCase, index) => compareGrid(testCase.output, predictions[index]));
+
+          renderSummary(results);
+          renderTrainExamples(task.train);
+          renderTestResults(task.test, predictions, results);
+          setCounts(task.train.length, task.test.length);
+          setStatus(buildStatusMessage(results), false);
+        } catch (error) {
+          renderSummary(null);
+          clearRenderedCases();
+          setCounts(0, 0);
+          showErrors([error instanceof Error ? error.message : "Evaluation failed."]);
+          setStatus("Fix validation errors and evaluate again.", true);
+        }
+      }
+
+      function clearAll() {
+        dom.taskJson.value = "";
+        dom.predictionJson.value = "";
+        renderSummary(null);
+        clearRenderedCases();
+        clearErrors();
+        setCounts(0, 0);
+        setStatus("Cleared.");
+      }
+
+      function loadCreatorHandoff() {
+        const raw = window.localStorage.getItem(EVALUATOR_HANDOFF_KEY);
+        if (!raw) {
+          return;
+        }
+
+        window.localStorage.removeItem(EVALUATOR_HANDOFF_KEY);
+
+        try {
+          const parsed = JSON.parse(raw);
+          const task = parseTask(parsed);
+          dom.taskJson.value = JSON.stringify(parsed, null, 2);
+          dom.predictionJson.value = "";
+          renderSummary(null);
+          renderTrainExamples(task.train);
+          clearErrors();
+          setCounts(task.train.length, task.test.length);
+          clearRenderedCases();
+          setStatus("Loaded Creator task. Add prediction JSON to evaluate.");
+        } catch (error) {
+          setStatus("Creator task could not be loaded.", true);
+        }
+      }
+
+      function readJson(text, label) {
+        const trimmed = text.trim();
+        if (!trimmed) {
+          throw new Error(`${label} is required.`);
+        }
+
+        try {
+          return JSON.parse(trimmed);
+        } catch (error) {
+          throw new Error(`${label} must be valid JSON.`);
+        }
+      }
+
+      function parseTask(value) {
+        if (!isPlainObject(value)) {
+          throw new Error("Task JSON root must be an object.");
+        }
+
+        if (!Array.isArray(value.train) || value.train.length === 0) {
+          throw new Error("Task JSON must contain a non-empty train array.");
+        }
+
+        if (!Array.isArray(value.test) || value.test.length === 0) {
+          throw new Error("Task JSON must contain a non-empty test array.");
+        }
+
+        return {
+          train: value.train.map((pair, index) => parsePair(pair, `train[${index}]`)),
+          test: value.test.map((pair, index) => parsePair(pair, `test[${index}]`))
+        };
+      }
+
+      function parsePair(value, label) {
+        if (!isPlainObject(value)) {
+          throw new Error(`${label} must be an object.`);
+        }
+
+        if (!("input" in value)) {
+          throw new Error(`${label} must contain input.`);
+        }
+
+        if (!("output" in value)) {
+          throw new Error(`${label} must contain output.`);
+        }
+
+        return {
+          input: normalizeGrid(value.input, `${label}.input`),
+          output: normalizeGrid(value.output, `${label}.output`)
+        };
+      }
+
+      function parsePredictions(value, testCount) {
+        if (testCount === 1 && isGridLike(value)) {
+          return [normalizeGrid(value, "prediction")];
+        }
+
+        if (!isPlainObject(value)) {
+          throw new Error("Prediction JSON must be a raw grid for one test, or an object with output/outputs.");
+        }
+
+        if ("outputs" in value) {
+          if (!Array.isArray(value.outputs)) {
+            throw new Error("Prediction outputs must be an array of grids.");
+          }
+
+          if (value.outputs.length !== testCount) {
+            throw new Error(`Prediction outputs contains ${value.outputs.length} grid(s), but task has ${testCount} test case(s).`);
+          }
+
+          return value.outputs.map((grid, index) => normalizeGrid(grid, `outputs[${index}]`));
+        }
+
+        if ("output" in value) {
+          if (testCount !== 1) {
+            throw new Error(`Prediction output is only valid for a single test case; this task has ${testCount}. Use {"outputs":[...]} instead.`);
+          }
+
+          return [normalizeGrid(value.output, "output")];
+        }
+
+        throw new Error("Prediction JSON must contain output or outputs.");
+      }
+
+      function isGridLike(value) {
+        return Array.isArray(value) && value.every((row) => Array.isArray(row));
+      }
+
+      function normalizeGrid(value, label) {
+        if (!Array.isArray(value) || value.length === 0) {
+          throw new Error(`${label} must be a non-empty grid.`);
+        }
+
+        let width = null;
+        const cells = value.map((row, rowIndex) => {
+          if (!Array.isArray(row) || row.length === 0) {
+            throw new Error(`${label} row ${rowIndex + 1} must be a non-empty array.`);
+          }
+
+          if (width === null) {
+            width = row.length;
+          } else if (row.length !== width) {
+            throw new Error(`${label} rows must all have the same length.`);
+          }
+
+          return row.map((cell, columnIndex) => normalizeCell(cell, `${label} row ${rowIndex + 1}, column ${columnIndex + 1}`));
+        });
+
+        return {
+          width,
+          height: cells.length,
+          cells
+        };
+      }
+
+      function normalizeCell(value, label) {
+        const code = typeof value === "number" && Number.isInteger(value) ? String(value) : value;
+        if (typeof code !== "string" || !allowedCodes.has(code)) {
+          throw new Error(`${label} has unsupported color code ${String(value)}.`);
+        }
+
+        return code;
+      }
+
+      function compareGrid(expected, predicted) {
+        const width = Math.max(expected.width, predicted.width);
+        const height = Math.max(expected.height, predicted.height);
+        const totalCells = width * height;
+        let mismatches = 0;
+        const diff = [];
+
+        for (let y = 0; y < height; y += 1) {
+          const row = [];
+          for (let x = 0; x < width; x += 1) {
+            const expectedCode = getCell(expected, x, y);
+            const predictedCode = getCell(predicted, x, y);
+            const matches = expectedCode === predictedCode;
+            if (!matches) {
+              mismatches += 1;
+            }
+
+            row.push({
+              expected: expectedCode,
+              predicted: predictedCode,
+              matches
+            });
+          }
+          diff.push(row);
+        }
+
+        const dimensionsMatch = expected.width === predicted.width && expected.height === predicted.height;
+        const exact = dimensionsMatch && mismatches === 0;
+
+        return {
+          exact,
+          dimensionsMatch,
+          expectedSize: `${expected.width} x ${expected.height}`,
+          predictedSize: `${predicted.width} x ${predicted.height}`,
+          mismatches,
+          totalCells,
+          accuracy: totalCells === 0 ? 0 : (totalCells - mismatches) / totalCells,
+          diff,
+          diffWidth: width,
+          diffHeight: height
+        };
+      }
+
+      function getCell(grid, x, y) {
+        return grid.cells[y]?.[x] ?? null;
+      }
+
+      function renderSummary(results) {
+        const metrics = dom.summary.querySelectorAll(".metric");
+        metrics.forEach((metric) => {
+          metric.classList.remove("pass", "fail");
+        });
+
+        if (!results) {
+          setMetric(metrics[0], "-", "Tests Passed");
+          setMetric(metrics[1], "-", "Cell Accuracy");
+          setMetric(metrics[2], "-", "Mismatches");
+          setMetric(metrics[3], "-", "Dimensions");
+          return;
+        }
+
+        const passed = results.filter((result) => result.exact).length;
+        const total = results.length;
+        const totalMismatches = results.reduce((sum, result) => sum + result.mismatches, 0);
+        const totalCells = results.reduce((sum, result) => sum + result.totalCells, 0);
+        const accuracy = totalCells === 0 ? 0 : (totalCells - totalMismatches) / totalCells;
+        const dimensionsOk = results.every((result) => result.dimensionsMatch);
+        const allPassed = passed === total;
+
+        setMetric(metrics[0], `${passed}/${total}`, "Tests Passed", allPassed ? "pass" : "fail");
+        setMetric(metrics[1], formatPercent(accuracy), "Cell Accuracy", accuracy === 1 ? "pass" : "fail");
+        setMetric(metrics[2], String(totalMismatches), "Mismatches", totalMismatches === 0 ? "pass" : "fail");
+        setMetric(metrics[3], dimensionsOk ? "OK" : "Mismatch", "Dimensions", dimensionsOk ? "pass" : "fail");
+      }
+
+      function setMetric(metric, value, label, className = "") {
+        metric.innerHTML = "";
+        if (className) {
+          metric.classList.add(className);
+        }
+
+        const valueNode = document.createElement("div");
+        valueNode.className = "metric-value";
+        valueNode.textContent = value;
+
+        const labelNode = document.createElement("div");
+        labelNode.className = "metric-label";
+        labelNode.textContent = label;
+
+        metric.append(valueNode, labelNode);
+      }
+
+      function renderTrainExamples(examples) {
+        dom.trainExamples.innerHTML = "";
+        const fragment = document.createDocumentFragment();
+
+        examples.forEach((example, index) => {
+          const article = document.createElement("article");
+          article.className = "example";
+
+          article.append(
+            createCaseHeader(`Train ${index + 1}`, "reference"),
+            createGridRow([
+              createGridPanel("Input", example.input),
+              createGridPanel("Output", example.output)
+            ])
+          );
+
+          fragment.append(article);
+        });
+
+        dom.trainExamples.append(fragment);
+      }
+
+      function renderTestResults(testCases, predictions, results) {
+        dom.testResults.innerHTML = "";
+        const fragment = document.createDocumentFragment();
+
+        testCases.forEach((testCase, index) => {
+          const result = results[index];
+          const article = document.createElement("article");
+          article.className = "test-case";
+
+          article.append(
+            createCaseHeader(`Test ${index + 1}`, result.exact ? "pass" : "fail", result.exact ? "Exact match" : "Mismatch"),
+            createNotes(result),
+            createGridRow([
+              createGridPanel("Input", testCase.input),
+              createGridPanel("Expected", testCase.output),
+              createGridPanel("Prediction", predictions[index]),
+              createDiffPanel(result)
+            ])
+          );
+
+          fragment.append(article);
+        });
+
+        dom.testResults.append(fragment);
+      }
+
+      function createCaseHeader(title, badgeType, badgeText = badgeType) {
+        const header = document.createElement("div");
+        header.className = "case-header";
+
+        const titleNode = document.createElement("div");
+        titleNode.className = "case-title";
+        titleNode.textContent = title;
+
+        const badge = document.createElement("span");
+        badge.className = `badge ${badgeType}`;
+        badge.textContent = badgeText;
+
+        header.append(titleNode, badge);
+        return header;
+      }
+
+      function createNotes(result) {
+        const notes = document.createElement("div");
+        notes.className = "case-notes";
+
+        notes.append(
+          createBadge(result.dimensionsMatch ? "pass" : "warn", `Expected ${result.expectedSize}; predicted ${result.predictedSize}`),
+          createBadge(result.mismatches === 0 ? "pass" : "fail", `${result.mismatches} mismatch${result.mismatches === 1 ? "" : "es"}`),
+          createBadge(result.accuracy === 1 ? "pass" : "fail", `${formatPercent(result.accuracy)} cells`)
+        );
+
+        return notes;
+      }
+
+      function createBadge(type, text) {
+        const badge = document.createElement("span");
+        badge.className = `badge ${type}`;
+        badge.textContent = text;
+        return badge;
+      }
+
+      function createGridRow(children) {
+        const row = document.createElement("div");
+        row.className = "grid-row";
+        row.append(...children);
+        return row;
+      }
+
+      function createGridPanel(title, grid) {
+        const panel = document.createElement("section");
+        panel.className = "grid-panel";
+
+        const header = document.createElement("div");
+        header.className = "grid-panel-header";
+
+        const label = document.createElement("div");
+        label.className = "grid-panel-title";
+        label.textContent = title;
+
+        const size = document.createElement("div");
+        size.className = "grid-size";
+        size.textContent = `${grid.width} x ${grid.height}`;
+
+        const scroll = document.createElement("div");
+        scroll.className = "grid-scroll";
+        scroll.append(createGridElement(grid.cells, grid.width, grid.height));
+
+        header.append(label, size);
+        panel.append(header, scroll);
+        return panel;
+      }
+
+      function createDiffPanel(result) {
+        const panel = document.createElement("section");
+        panel.className = "grid-panel";
+
+        const header = document.createElement("div");
+        header.className = "grid-panel-header";
+
+        const label = document.createElement("div");
+        label.className = "grid-panel-title";
+        label.textContent = "Diff";
+
+        const size = document.createElement("div");
+        size.className = "grid-size";
+        size.textContent = `${result.diffWidth} x ${result.diffHeight}`;
+
+        const scroll = document.createElement("div");
+        scroll.className = "grid-scroll";
+        scroll.append(createDiffGridElement(result));
+
+        const legend = document.createElement("div");
+        legend.className = "diff-legend";
+        legend.append(createLegendItem("outlined cells differ"));
+        scroll.append(legend);
+
+        header.append(label, size);
+        panel.append(header, scroll);
+        return panel;
+      }
+
+      function createLegendItem(text) {
+        const item = document.createElement("span");
+        item.className = "legend-item";
+
+        const swatch = document.createElement("span");
+        swatch.className = "legend-swatch";
+
+        const label = document.createElement("span");
+        label.textContent = text;
+
+        item.append(swatch, label);
+        return item;
+      }
+
+      function createGridElement(cells, width, height) {
+        const grid = document.createElement("div");
+        grid.className = "arc-grid";
+        grid.style.gridTemplateColumns = `repeat(${width}, var(--cell-size))`;
+        grid.style.gridTemplateRows = `repeat(${height}, var(--cell-size))`;
+        grid.style.setProperty("--cell-size", getCellSize(width, height));
+
+        for (let y = 0; y < height; y += 1) {
+          for (let x = 0; x < width; x += 1) {
+            grid.append(createCell(cells[y][x], `${x + 1}, ${y + 1}: ${COLOR_MAP[cells[y][x]].name} (${cells[y][x]})`));
+          }
+        }
+
+        return grid;
+      }
+
+      function createDiffGridElement(result) {
+        const grid = document.createElement("div");
+        grid.className = "arc-grid";
+        grid.style.gridTemplateColumns = `repeat(${result.diffWidth}, var(--cell-size))`;
+        grid.style.gridTemplateRows = `repeat(${result.diffHeight}, var(--cell-size))`;
+        grid.style.setProperty("--cell-size", getCellSize(result.diffWidth, result.diffHeight));
+
+        for (let y = 0; y < result.diffHeight; y += 1) {
+          for (let x = 0; x < result.diffWidth; x += 1) {
+            const item = result.diff[y][x];
+            const code = item.predicted ?? item.expected ?? "0";
+            const cell = createCell(code, buildDiffTitle(item, x, y));
+            cell.classList.toggle("diff", !item.matches);
+            cell.classList.toggle("missing", item.predicted === null);
+            cell.classList.toggle("extra", item.expected === null);
+            grid.append(cell);
+          }
+        }
+
+        return grid;
+      }
+
+      function createCell(code, title) {
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        cell.style.setProperty("--cell-color", COLOR_MAP[code]?.color ?? "#ffffff");
+        cell.title = title;
+        return cell;
+      }
+
+      function buildDiffTitle(item, x, y) {
+        const expected = item.expected === null ? "missing" : item.expected;
+        const predicted = item.predicted === null ? "missing" : item.predicted;
+        return `${x + 1}, ${y + 1}: expected ${expected}; predicted ${predicted}`;
+      }
+
+      function getCellSize(width, height) {
+        const largest = Math.max(width, height);
+        if (largest > 80) {
+          return "7px";
+        }
+        if (largest > 50) {
+          return "9px";
+        }
+        if (largest > 35) {
+          return "12px";
+        }
+        if (largest > 24) {
+          return "15px";
+        }
+        return "18px";
+      }
+
+      function clearRenderedCases() {
+        dom.trainExamples.innerHTML = "";
+        dom.testResults.innerHTML = "";
+        const empty = document.createElement("div");
+        empty.className = "empty-state";
+        empty.textContent = "Paste valid task and prediction JSON to render comparisons.";
+        dom.testResults.append(empty);
+      }
+
+      function showErrors(errors) {
+        dom.errors.innerHTML = "";
+        const panel = document.createElement("article");
+        panel.className = "panel";
+
+        const header = document.createElement("div");
+        header.className = "panel-header";
+
+        const title = document.createElement("div");
+        title.className = "panel-title";
+        const strong = document.createElement("strong");
+        strong.textContent = "Validation Errors";
+        title.append(strong);
+        header.append(title);
+
+        const wrap = document.createElement("div");
+        wrap.className = "editor-wrap";
+        const list = document.createElement("ul");
+        list.className = "error-list";
+
+        errors.forEach((message) => {
+          const item = document.createElement("li");
+          item.textContent = message;
+          list.append(item);
+        });
+
+        wrap.append(list);
+        panel.append(header, wrap);
+        dom.errors.append(panel);
+      }
+
+      function clearErrors() {
+        dom.errors.innerHTML = "";
+      }
+
+      function setCounts(trainCount, testCount) {
+        dom.trainCount.textContent = `${trainCount} example${trainCount === 1 ? "" : "s"}`;
+        dom.testCount.textContent = `${testCount} test${testCount === 1 ? "" : "s"}`;
+      }
+
+      function buildStatusMessage(results) {
+        const passed = results.filter((result) => result.exact).length;
+        return passed === results.length
+          ? `All ${results.length} test${results.length === 1 ? "" : "s"} passed.`
+          : `${passed}/${results.length} tests passed.`;
+      }
+
+      function setStatus(message, isError = false) {
+        dom.status.textContent = message;
+        dom.status.classList.toggle("error", isError);
+      }
+
+      function formatPercent(value) {
+        return `${(value * 100).toFixed(value === 1 || value === 0 ? 0 : 1)}%`;
+      }
+
+      function isPlainObject(value) {
+        return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+      }
+    })();
+  </script>
+</body>
+</html>

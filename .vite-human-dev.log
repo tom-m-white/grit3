@@ -1,0 +1,40 @@
+
+> grit3-question-weighting-studio@1.0.0 dev
+> vite --host 127.0.0.1
+
+Port 5173 is in use, trying another one...
+Port 5174 is in use, trying another one...
+
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m269[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m5175[22m/[39m
+[2m7:45:46 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/weighting-studio/HumanBenchmarkApp.tsx[22m
+[2m7:47:23 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/weighting-studio/HumanBenchmarkApp.tsx[22m
+[2m7:47:30 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/weighting-studio/HumanBenchmarkApp.tsx[22m
+[2m7:47:39 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/weighting-studio/HumanBenchmarkApp.tsx[22m
+[2m7:48:27 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/weighting-studio/HumanBenchmarkApp.tsx[22m
+[2m7:48:38 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/weighting-studio/HumanBenchmarkApp.tsx[22m
+[2m7:48:54 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/weighting-studio/HumanBenchmarkApp.tsx[22m
+[2m7:49:14 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/weighting-studio/HumanBenchmarkApp.tsx[22m
+[2m7:49:46 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/weighting-studio/HumanBenchmarkApp.tsx[22m
+[2m7:50:00 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/weighting-studio/HumanBenchmarkApp.tsx[22m
+[2m7:50:04 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/weighting-studio/HumanBenchmarkApp.tsx[22m
+[2m7:50:11 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/weighting-studio/HumanBenchmarkApp.tsx[22m
+[2m7:50:18 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/weighting-studio/HumanBenchmarkApp.tsx[22m
+[2m7:50:23 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/weighting-studio/HumanBenchmarkApp.tsx[22m
+[2m7:50:32 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/weighting-studio/styles.css[22m
+[2m7:51:08 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/weighting-studio/HumanBenchmarkApp.tsx[22m
+[2m8:10:15 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mevaluator.html[22m
+[2m8:10:20 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mindex.html[22m
+[2m8:11:37 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/weighting-studio/styles.css[22m
+[2m8:12:05 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/weighting-studio/styles.css[22m
+[2m8:12:12 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/weighting-studio/styles.css[22m
+[2m8:12:27 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/weighting-studio/styles.css[22m
+[2m8:12:33 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/weighting-studio/styles.css[22m
+[2m8:12:39 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/weighting-studio/styles.css[22m
+[2m8:14:04 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/weighting-studio/styles.css[22m
+[2m8:14:14 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/weighting-studio/styles.css[22m
+[2m8:14:28 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mevaluator.html[22m
+[2m8:14:41 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mevaluator.html[22m
+[2m8:14:45 PM[22m [36m[1m[vite][22m[39m [32mvite.config.ts changed, restarting server...[39m
+[2m8:14:45 PM[22m [36m[1m[vite][22m[39m server restarted.

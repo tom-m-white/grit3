@@ -1,0 +1,513 @@
+{
+  "benchmark": "grit3",
+  "profile_name": "default",
+  "version": 1,
+  "questions": {
+    "q3": {
+      "question_id": "q3",
+      "ratings": {
+        "number_of_concepts": 1,
+        "object_abstraction": 2,
+        "transformation_depth": 1,
+        "distractors": 2,
+        "output_precision": 1,
+        "rule_ambiguity": 2,
+        "compositionality": 4
+      },
+      "computed_average": 1.86,
+      "suggested_weight_bucket": 1,
+      "manual_weight_override": null,
+      "final_weight": 1,
+      "tags": [
+        "pattern-completion"
+      ],
+      "notes": "",
+      "difficulty_rationale": "",
+      "updated_at": "2026-05-21T19:13:07.884Z"
+    },
+    "q4": {
+      "question_id": "q4",
+      "ratings": {
+        "number_of_concepts": 3,
+        "object_abstraction": 4,
+        "transformation_depth": 3,
+        "distractors": 2,
+        "output_precision": 3,
+        "rule_ambiguity": 2,
+        "compositionality": 4
+      },
+      "computed_average": 3,
+      "suggested_weight_bucket": 2,
+      "manual_weight_override": null,
+      "final_weight": 2,
+      "tags": [
+        "object-motion"
+      ],
+      "notes": "",
+      "difficulty_rationale": "- object wall collision detection",
+      "updated_at": "2026-05-21T19:47:57.472Z"
+    },
+    "q5": {
+      "question_id": "q5",
+      "ratings": {
+        "number_of_concepts": 1,
+        "object_abstraction": 5,
+        "transformation_depth": 1,
+        "distractors": 3,
+        "output_precision": 3,
+        "rule_ambiguity": 2,
+        "compositionality": 2
+      },
+      "computed_average": 2.43,
+      "suggested_weight_bucket": 2,
+      "manual_weight_override": null,
+      "final_weight": 2,
+      "tags": [],
+      "notes": "",
+      "difficulty_rationale": "",
+      "updated_at": "2026-05-21T19:21:37.716Z"
+    },
+    "q6": {
+      "question_id": "q6",
+      "ratings": {
+        "number_of_concepts": 5,
+        "object_abstraction": 2,
+        "transformation_depth": 4,
+        "distractors": 1,
+        "output_precision": 2,
+        "rule_ambiguity": 5,
+        "compositionality": 3
+      },
+      "computed_average": 3.14,
+      "suggested_weight_bucket": 3,
+      "manual_weight_override": null,
+      "final_weight": 3,
+      "tags": [
+        "pattern"
+      ],
+      "notes": "",
+      "difficulty_rationale": "",
+      "updated_at": "2026-05-21T19:32:51.100Z"
+    },
+    "q7": {
+      "question_id": "q7",
+      "ratings": {
+        "number_of_concepts": 1,
+        "object_abstraction": 1,
+        "transformation_depth": 1,
+        "distractors": 1,
+        "output_precision": 3,
+        "rule_ambiguity": 1,
+        "compositionality": 1
+      },
+      "computed_average": 1.29,
+      "suggested_weight_bucket": 1,
+      "manual_weight_override": null,
+      "final_weight": 1,
+      "tags": [],
+      "notes": "",
+      "difficulty_rationale": "",
+      "updated_at": "2026-05-21T19:33:09.192Z"
+    },
+    "q8": {
+      "question_id": "q8",
+      "ratings": {
+        "number_of_concepts": 4,
+        "object_abstraction": 3,
+        "transformation_depth": 2,
+        "distractors": 1,
+        "output_precision": 3,
+        "rule_ambiguity": 3,
+        "compositionality": 2
+      },
+      "computed_average": 2.57,
+      "suggested_weight_bucket": 2,
+      "manual_weight_override": null,
+      "final_weight": 2,
+      "tags": [],
+      "notes": "",
+      "difficulty_rationale": "",
+      "updated_at": "2026-05-21T19:35:49.620Z"
+    },
+    "q9": {
+      "question_id": "q9",
+      "ratings": {
+        "number_of_concepts": 5,
+        "object_abstraction": 4,
+        "transformation_depth": 4,
+        "distractors": 3,
+        "output_precision": 5,
+        "rule_ambiguity": 5,
+        "compositionality": 4
+      },
+      "computed_average": 4.29,
+      "suggested_weight_bucket": 4,
+      "manual_weight_override": null,
+      "final_weight": 4,
+      "tags": [],
+      "notes": "",
+      "difficulty_rationale": "",
+      "updated_at": "2026-05-21T19:48:12.884Z"
+    },
+    "q10": {
+      "question_id": "q10",
+      "ratings": {
+        "number_of_concepts": 2,
+        "object_abstraction": 2,
+        "transformation_depth": 1,
+        "distractors": 2,
+        "output_precision": 2,
+        "rule_ambiguity": 2,
+        "compositionality": 2
+      },
+      "computed_average": 1.86,
+      "suggested_weight_bucket": 1,
+      "manual_weight_override": null,
+      "final_weight": 1,
+      "tags": [],
+      "notes": "",
+      "difficulty_rationale": "",
+      "updated_at": "2026-05-21T19:40:38.902Z"
+    },
+    "q11": {
+      "question_id": "q11",
+      "ratings": {
+        "number_of_concepts": 2,
+        "object_abstraction": 2,
+        "transformation_depth": 3,
+        "distractors": 1,
+        "output_precision": 3,
+        "rule_ambiguity": 1,
+        "compositionality": 1
+      },
+      "computed_average": 1.86,
+      "suggested_weight_bucket": 1,
+      "manual_weight_override": null,
+      "final_weight": 1,
+      "tags": [],
+      "notes": "",
+      "difficulty_rationale": "",
+      "updated_at": "2026-05-21T19:51:56.986Z"
+    },
+    "q12": {
+      "question_id": "q12",
+      "ratings": {
+        "number_of_concepts": 2,
+        "object_abstraction": 4,
+        "transformation_depth": 4,
+        "distractors": 3,
+        "output_precision": 3,
+        "rule_ambiguity": 3,
+        "compositionality": 4
+      },
+      "computed_average": 3.29,
+      "suggested_weight_bucket": 3,
+      "manual_weight_override": null,
+      "final_weight": 3,
+      "tags": [],
+      "notes": "",
+      "difficulty_rationale": "",
+      "updated_at": "2026-05-21T19:52:00.804Z"
+    },
+    "q13": {
+      "question_id": "q13",
+      "ratings": {
+        "number_of_concepts": 4,
+        "object_abstraction": 4,
+        "transformation_depth": 3,
+        "distractors": 2,
+        "output_precision": 5,
+        "rule_ambiguity": 5,
+        "compositionality": 4
+      },
+      "computed_average": 3.86,
+      "suggested_weight_bucket": 3,
+      "manual_weight_override": 4,
+      "final_weight": 4,
+      "tags": [],
+      "notes": "",
+      "difficulty_rationale": "",
+      "updated_at": "2026-05-21T19:51:31.347Z"
+    },
+    "q14": {
+      "question_id": "q14",
+      "ratings": {
+        "number_of_concepts": 2,
+        "object_abstraction": 1,
+        "transformation_depth": 1,
+        "distractors": 1,
+        "output_precision": 1,
+        "rule_ambiguity": 1,
+        "compositionality": 1
+      },
+      "computed_average": 1.14,
+      "suggested_weight_bucket": 1,
+      "manual_weight_override": null,
+      "final_weight": 1,
+      "tags": [],
+      "notes": "",
+      "difficulty_rationale": "",
+      "updated_at": "2026-05-21T19:51:26.987Z"
+    },
+    "q15": {
+      "question_id": "q15",
+      "ratings": {
+        "number_of_concepts": 2,
+        "object_abstraction": 3,
+        "transformation_depth": 2,
+        "distractors": 1,
+        "output_precision": 3,
+        "rule_ambiguity": 2,
+        "compositionality": 2
+      },
+      "computed_average": 2.14,
+      "suggested_weight_bucket": 2,
+      "manual_weight_override": null,
+      "final_weight": 2,
+      "tags": [],
+      "notes": "",
+      "difficulty_rationale": "",
+      "updated_at": "2026-05-21T19:53:23.169Z"
+    },
+    "q16": {
+      "question_id": "q16",
+      "ratings": {
+        "number_of_concepts": 2,
+        "object_abstraction": 3,
+        "transformation_depth": 2,
+        "distractors": 1,
+        "output_precision": 5,
+        "rule_ambiguity": 2,
+        "compositionality": 2
+      },
+      "computed_average": 2.43,
+      "suggested_weight_bucket": 2,
+      "manual_weight_override": null,
+      "final_weight": 2,
+      "tags": [],
+      "notes": "",
+      "difficulty_rationale": "",
+      "updated_at": "2026-05-21T19:54:14.060Z"
+    },
+    "q17": {
+      "question_id": "q17",
+      "ratings": {
+        "number_of_concepts": 4,
+        "object_abstraction": 5,
+        "transformation_depth": 4,
+        "distractors": 3,
+        "output_precision": 4,
+        "rule_ambiguity": 5,
+        "compositionality": 3
+      },
+      "computed_average": 4,
+      "suggested_weight_bucket": 3,
+      "manual_weight_override": 4,
+      "final_weight": 4,
+      "tags": [],
+      "notes": "",
+      "difficulty_rationale": "",
+      "updated_at": "2026-05-21T19:55:46.640Z"
+    },
+    "q18": {
+      "question_id": "q18",
+      "ratings": {
+        "number_of_concepts": 4,
+        "object_abstraction": 3,
+        "transformation_depth": 3,
+        "distractors": 3,
+        "output_precision": 3,
+        "rule_ambiguity": 4,
+        "compositionality": 3
+      },
+      "computed_average": 3.29,
+      "suggested_weight_bucket": 3,
+      "manual_weight_override": null,
+      "final_weight": 3,
+      "tags": [],
+      "notes": "",
+      "difficulty_rationale": "",
+      "updated_at": "2026-05-21T19:58:13.273Z"
+    },
+    "q19": {
+      "question_id": "q19",
+      "ratings": {
+        "number_of_concepts": 2,
+        "object_abstraction": 5,
+        "transformation_depth": 2,
+        "distractors": 2,
+        "output_precision": 5,
+        "rule_ambiguity": 2,
+        "compositionality": 1
+      },
+      "computed_average": 2.71,
+      "suggested_weight_bucket": 2,
+      "manual_weight_override": null,
+      "final_weight": 2,
+      "tags": [],
+      "notes": "",
+      "difficulty_rationale": "",
+      "updated_at": "2026-05-21T19:59:24.360Z"
+    },
+    "q20": {
+      "question_id": "q20",
+      "ratings": {
+        "number_of_concepts": 3,
+        "object_abstraction": 4,
+        "transformation_depth": 2,
+        "distractors": 3,
+        "output_precision": 2,
+        "rule_ambiguity": 4,
+        "compositionality": 2
+      },
+      "computed_average": 2.86,
+      "suggested_weight_bucket": 2,
+      "manual_weight_override": 3,
+      "final_weight": 3,
+      "tags": [],
+      "notes": "",
+      "difficulty_rationale": "",
+      "updated_at": "2026-05-21T20:01:39.691Z"
+    },
+    "q21": {
+      "question_id": "q21",
+      "ratings": {
+        "number_of_concepts": 2,
+        "object_abstraction": 2,
+        "transformation_depth": 1,
+        "distractors": 3,
+        "output_precision": 2,
+        "rule_ambiguity": 2,
+        "compositionality": 2
+      },
+      "computed_average": 2,
+      "suggested_weight_bucket": 1,
+      "manual_weight_override": null,
+      "final_weight": 1,
+      "tags": [],
+      "notes": "",
+      "difficulty_rationale": "",
+      "updated_at": "2026-05-21T20:02:34.550Z"
+    },
+    "q22": {
+      "question_id": "q22",
+      "ratings": {
+        "number_of_concepts": 4,
+        "object_abstraction": 5,
+        "transformation_depth": 2,
+        "distractors": 4,
+        "output_precision": 1,
+        "rule_ambiguity": 5,
+        "compositionality": 3
+      },
+      "computed_average": 3.43,
+      "suggested_weight_bucket": 3,
+      "manual_weight_override": null,
+      "final_weight": 3,
+      "tags": [],
+      "notes": "",
+      "difficulty_rationale": "",
+      "updated_at": "2026-05-21T20:04:32.026Z"
+    },
+    "q23": {
+      "question_id": "q23",
+      "ratings": {
+        "number_of_concepts": 1,
+        "object_abstraction": 1,
+        "transformation_depth": 1,
+        "distractors": 1,
+        "output_precision": 1,
+        "rule_ambiguity": 1,
+        "compositionality": 1
+      },
+      "computed_average": 1,
+      "suggested_weight_bucket": 1,
+      "manual_weight_override": null,
+      "final_weight": 1,
+      "tags": [],
+      "notes": "",
+      "difficulty_rationale": "",
+      "updated_at": "2026-05-21T20:10:17.895Z"
+    },
+    "q24": {
+      "question_id": "q24",
+      "ratings": {
+        "number_of_concepts": 2,
+        "object_abstraction": 2,
+        "transformation_depth": 2,
+        "distractors": 2,
+        "output_precision": 2,
+        "rule_ambiguity": 3,
+        "compositionality": 2
+      },
+      "computed_average": 2.14,
+      "suggested_weight_bucket": 2,
+      "manual_weight_override": null,
+      "final_weight": 2,
+      "tags": [],
+      "notes": "",
+      "difficulty_rationale": "",
+      "updated_at": "2026-05-21T20:06:25.128Z"
+    },
+    "q25": {
+      "question_id": "q25",
+      "ratings": {
+        "number_of_concepts": 2,
+        "object_abstraction": 3,
+        "transformation_depth": 1,
+        "distractors": 2,
+        "output_precision": 2,
+        "rule_ambiguity": 2,
+        "compositionality": 2
+      },
+      "computed_average": 2,
+      "suggested_weight_bucket": 1,
+      "manual_weight_override": 2,
+      "final_weight": 2,
+      "tags": [],
+      "notes": "",
+      "difficulty_rationale": "",
+      "updated_at": "2026-05-21T20:07:39.499Z"
+    },
+    "q26": {
+      "question_id": "q26",
+      "ratings": {
+        "number_of_concepts": 4,
+        "object_abstraction": 4,
+        "transformation_depth": 3,
+        "distractors": 5,
+        "output_precision": 4,
+        "rule_ambiguity": 4,
+        "compositionality": 2
+      },
+      "computed_average": 3.71,
+      "suggested_weight_bucket": 3,
+      "manual_weight_override": null,
+      "final_weight": 3,
+      "tags": [],
+      "notes": "",
+      "difficulty_rationale": "",
+      "updated_at": "2026-05-21T20:10:11.676Z"
+    },
+    "q27": {
+      "question_id": "q27",
+      "ratings": {
+        "number_of_concepts": 3,
+        "object_abstraction": 4,
+        "transformation_depth": 5,
+        "distractors": 2,
+        "output_precision": 5,
+        "rule_ambiguity": 4,
+        "compositionality": 1
+      },
+      "computed_average": 3.43,
+      "suggested_weight_bucket": 3,
+      "manual_weight_override": null,
+      "final_weight": 3,
+      "tags": [],
+      "notes": "",
+      "difficulty_rationale": "",
+      "updated_at": "2026-05-21T20:11:23.662Z"
+    }
+  }
+}
