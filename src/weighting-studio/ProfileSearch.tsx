@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import {
   canSearchProfiles,
+  profileStoreErrorMessage,
   publicProfilePath,
   searchPublicProfiles,
   type PublicProfileSummary
@@ -66,7 +67,7 @@ export function ProfileSearch({
           }
           setResults([]);
           setOpen(true);
-          setMessage(error instanceof Error ? error.message : "Profile search failed.");
+          setMessage(profileStoreErrorMessage(error, "Profile search failed."));
         })
         .finally(() => {
           if (requestIdRef.current === requestId) {

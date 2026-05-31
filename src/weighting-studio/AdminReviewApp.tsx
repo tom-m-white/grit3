@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AppHeader } from "./AppHeader";
 import { AuthGate, type AppAccount } from "./account";
+import { formatTaskJsonForReview } from "./adminReview";
 import {
   type CreatedQuestionRow,
   type CreatedQuestionStatus,
@@ -162,7 +163,7 @@ function AdminReviewWorkspace({ account, onSignOut }: { account: AppAccount; onS
                       {selected.task.train.length} train / {selected.task.test.length} test
                     </span>
                   </div>
-                  <pre className="json-preview">{JSON.stringify(selected.task, null, 2)}</pre>
+                  <pre className="json-preview">{formatTaskJsonForReview(selected.task)}</pre>
                 </section>
               </>
             ) : (

@@ -27,6 +27,7 @@ import {
   flipGridSelection,
   floodFillGrid,
   gridDimensions,
+  isCellInGridSelection,
   moveGridSelection,
   normalizeGridSelection,
   pasteSparseClipboard,
@@ -80,6 +81,7 @@ function HumanBenchmarkWorkspace({ account, onSignOut }: { account: AppAccount; 
   const lastPaintedRef = useRef<string | null>(null);
   const selectionStartRef = useRef<{ outputIndex: number; x: number; y: number } | null>(null);
   const selectionDraggedRef = useRef(false);
+  const selectionBeforePointerDownRef = useRef<AdvancedGridSelection | null>(null);
 
   const currentQuestionIdValue = run?.current_question_id ?? null;
   const currentQuestion = currentQuestionIdValue ? questionById(currentQuestionIdValue) : null;
@@ -118,9 +120,14 @@ function HumanBenchmarkWorkspace({ account, onSignOut }: { account: AppAccount; 
         const grid = drafts[outputIndex];
         const color = grid?.[y]?.[x];
         if (color !== undefined) {
-          const nextSelection = selectCellsByColor(grid, color);
-          setSelection(nextSelection);
-          setStatus(nextSelection ? `Selected color ${color}.` : "No matching cells selected.");
+          if (isCellInGridSelection(selectionBeforePointerDownRef.current, grid, x, y)) {
+            setSelection(null);
+            setStatus("Selection cleared.");
+          } else {
+            const nextSelection = selectCellsByColor(grid, color);
+            setSelection(nextSelection);
+            setStatus(nextSelection ? `Selected color ${color}.` : "No matching cells selected.");
+          }
         }
       }
 
@@ -128,6 +135,7 @@ function HumanBenchmarkWorkspace({ account, onSignOut }: { account: AppAccount; 
       lastPaintedRef.current = null;
       selectionStartRef.current = null;
       selectionDraggedRef.current = false;
+      selectionBeforePointerDownRef.current = null;
     }
 
     window.addEventListener("pointerup", handlePointerUp);
@@ -307,6 +315,15 @@ function HumanBenchmarkWorkspace({ account, onSignOut }: { account: AppAccount; 
     );
   }
 
+  function deselectSelection() {
+    if (!selection) {
+      setStatus("No selection to clear.");
+      return;
+    }
+    setSelection(null);
+    setStatus("Selection cleared.");
+  }
+
   function moveSelection(dx: number, dy: number) {
     if (!selection) {
       setStatus("Select cells before moving.");
@@ -396,9 +413,12 @@ function HumanBenchmarkWorkspace({ account, onSignOut }: { account: AppAccount; 
       return;
     }
 
+    const previousSelection = outputIndex === activeOutputIndex ? selection : null;
     selectOutput(outputIndex);
     isPointerDownRef.current = true;
+    selectionBeforePointerDownRef.current = null;
     if (tool === "select") {
+      selectionBeforePointerDownRef.current = previousSelection;
       selectionStartRef.current = { outputIndex, x, y };
       selectionDraggedRef.current = false;
       setSelection({ startX: x, startY: y, endX: x, endY: y });
@@ -571,6 +591,7 @@ function HumanBenchmarkWorkspace({ account, onSignOut }: { account: AppAccount; 
               onClearSelection={clearActiveSelectionOrGrid}
               onCopySelection={copySelectedRegion}
               onCopyInput={copyTestInput}
+              onDeselectSelection={deselectSelection}
               onEnd={endBenchmark}
               onFlip={flipActive}
               onMove={moveSelection}
@@ -744,6 +765,7 @@ function AnswerPanel({
   onClearSelection,
   onCopySelection,
   onCopyInput,
+  onDeselectSelection,
   onEnd,
   onFlip,
   onMove,
@@ -777,6 +799,7 @@ function AnswerPanel({
   onClearSelection: () => void;
   onCopySelection: () => void;
   onCopyInput: (outputIndex: number) => void;
+  onDeselectSelection: () => void;
   onEnd: () => void;
   onFlip: (axis: "horizontal" | "vertical") => void;
   onMove: (dx: number, dy: number) => void;
@@ -850,6 +873,9 @@ function AnswerPanel({
           </button>
           <button className="button secondary compact-button" type="button" onClick={onPasteSelection} disabled={frozen || !clipboard}>
             Paste
+          </button>
+          <button className="button secondary compact-button" type="button" onClick={onDeselectSelection} disabled={frozen || !hasSelection}>
+            Deselect
           </button>
           <button className="button secondary compact-button" type="button" onClick={onClearSelection} disabled={frozen}>
             Clear

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { canSearchProfiles, mapPublicProfileRows, normalizeProfileSearchQuery } from "./publicProfileStore";
+import {
+  canSearchProfiles,
+  mapPublicProfileRows,
+  normalizeProfileSearchQuery,
+  profileStoreErrorMessage
+} from "./publicProfileStore";
 
 describe("profile search helpers", () => {
   it("normalizes profile search text", () => {
@@ -11,6 +16,13 @@ describe("profile search helpers", () => {
     expect(canSearchProfiles("a")).toBe(false);
     expect(canSearchProfiles("@a")).toBe(false);
     expect(canSearchProfiles("@al")).toBe(true);
+  });
+
+  it("reads Supabase error messages from plain response objects", () => {
+    expect(profileStoreErrorMessage({ message: "permission denied for function search_public_profiles" }, "fallback")).toBe(
+      "permission denied for function search_public_profiles"
+    );
+    expect(profileStoreErrorMessage({}, "fallback")).toBe("fallback");
   });
 
   it("maps public profile rows defensively", () => {

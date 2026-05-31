@@ -31,6 +31,19 @@ export function publicProfilePath(username: string): string {
   return `${appPath("/profile.html")}?u=${encodeURIComponent(username)}`;
 }
 
+export function profileStoreErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+  if (error && typeof error === "object" && "message" in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === "string" && message.trim()) {
+      return message;
+    }
+  }
+  return fallback;
+}
+
 export async function searchPublicProfiles(query: string): Promise<PublicProfileSummary[]> {
   const normalized = normalizeProfileSearchQuery(query);
   if (normalized.length < 2) {

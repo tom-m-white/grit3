@@ -4,7 +4,7 @@ import { AuthGate, type AppAccount } from "./account";
 import { type BenchmarkRunBundle, listUserRuns } from "./benchmarkStore";
 import { type CreatedQuestionRow, listUserCreatedQuestions } from "./createdQuestionsStore";
 import { summarizeHumanSession } from "./humanBenchmarkSession";
-import { getPublicProfile, type PublicProfileSummary } from "./publicProfileStore";
+import { getPublicProfile, profileStoreErrorMessage, type PublicProfileSummary } from "./publicProfileStore";
 import { appPath } from "./routes";
 
 export function ProfileApp() {
@@ -33,7 +33,7 @@ function PublicProfilePage({ publicUsername }: { publicUsername: string }) {
         setPublicProfile(nextProfile);
         setStatus(nextProfile ? `${nextProfile.username} loaded.` : "Profile not found.");
       } catch (error) {
-        setStatus(error instanceof Error ? error.message : "Profile could not be loaded.");
+        setStatus(profileStoreErrorMessage(error, "Profile could not be loaded."));
       } finally {
         setLoading(false);
       }

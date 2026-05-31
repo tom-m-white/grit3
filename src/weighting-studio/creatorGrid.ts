@@ -213,6 +213,15 @@ export function selectCellsByColor(grid: ArcGrid, color: number): CellSelection 
   return cells.length === 0 ? null : { kind: "cells", cells };
 }
 
+export function isCellInGridSelection(
+  selection: AdvancedGridSelection | null,
+  grid: ArcGrid,
+  x: number,
+  y: number
+): boolean {
+  return Boolean(normalizeGridSelection(selection, grid)?.cells.some((cell) => cell.x === x && cell.y === y));
+}
+
 export function copyGridSelection(grid: ArcGrid, selection: AdvancedGridSelection | null): SparseGridClipboard | null {
   const normalized = normalizeGridSelection(selection, grid);
   if (!normalized) {

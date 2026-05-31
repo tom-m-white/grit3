@@ -297,8 +297,13 @@ $$;
 
 revoke all on function public.search_public_profiles(text) from public;
 revoke all on function public.get_public_profile(text) from public;
+-- These summary RPCs back public profile lookup and must work before login.
+grant usage on schema public to anon, authenticated;
+grant usage on schema public to public;
 grant execute on function public.search_public_profiles(text) to anon, authenticated;
 grant execute on function public.get_public_profile(text) to anon, authenticated;
+grant execute on function public.search_public_profiles(text) to public;
+grant execute on function public.get_public_profile(text) to public;
 
 drop trigger if exists profiles_set_updated_at on public.profiles;
 create trigger profiles_set_updated_at

@@ -9,6 +9,7 @@ import {
   floodFillGrid,
   flipGridSelection,
   flipGrid,
+  isCellInGridSelection,
   pasteClipboard,
   pasteSparseClipboard,
   resizeGrid,
@@ -154,6 +155,24 @@ describe("creator grid helpers", () => {
         { x: 0, y: 1 }
       ]
     });
+  });
+
+  it("detects cells inside rectangular and sparse selections", () => {
+    expect(isCellInGridSelection({ startX: 2, startY: 1, endX: 1, endY: 2 }, grid, 1, 2)).toBe(true);
+    expect(
+      isCellInGridSelection(
+        {
+          kind: "cells",
+          cells: [
+            { x: 0, y: 0 },
+            { x: 2, y: 2 }
+          ]
+        },
+        grid,
+        1,
+        1
+      )
+    ).toBe(false);
   });
 
   it("copies and pastes sparse selections while preserving gaps", () => {
