@@ -35,6 +35,7 @@ import {
 import { validateImportedProfile } from "./profile";
 import { loadQuestions } from "./questionLoader";
 import { QUESTION_IDS } from "./rubric";
+import { appPath } from "./routes";
 import type { ArcGrid, LoadedQuestion, QuestionId } from "./types";
 
 const QUESTIONS = loadQuestions();
@@ -473,19 +474,19 @@ export function HumanBenchmarkApp() {
           <h1>GRIT3 Human Benchmark</h1>
         </div>
         <div className="topbar-actions">
-          <a className="button secondary" href="/">
+          <a className="button secondary" href={appPath("/")}>
             Home
           </a>
-          <a className="button secondary" href="/evaluator.html">
+          <a className="button secondary" href={appPath("/evaluator.html")}>
             Evaluator
           </a>
-          <a className="button secondary" href="/creator.html">
+          <a className="button secondary" href={appPath("/creator.html")}>
             Creator
           </a>
-          <a className="button secondary" href="/studio.html">
+          <a className="button secondary" href={appPath("/studio.html")}>
             Weighting Studio
           </a>
-          <a className="button secondary" href="/results.html">
+          <a className="button secondary" href={appPath("/results.html")}>
             Results
           </a>
           {session ? (

@@ -26,6 +26,7 @@ import {
   type GridClipboard,
   type GridSelection
 } from "./creatorGrid";
+import { appPath } from "./routes";
 import type { ArcGrid } from "./types";
 
 const CREATOR_STORAGE_KEY = "grit3.creator.draft.v1";
@@ -339,7 +340,7 @@ export function CreatorApp() {
       return;
     }
     window.localStorage.setItem(EVALUATOR_HANDOFF_KEY, taskJson);
-    window.location.href = "/evaluator.html";
+    window.location.href = appPath("/evaluator.html");
   }
 
   return (
@@ -350,19 +351,19 @@ export function CreatorApp() {
           <h1>GRIT3 Creator Studio</h1>
         </div>
         <div className="topbar-actions">
-          <a className="button secondary" href="/">
+          <a className="button secondary" href={appPath("/")}>
             Home
           </a>
-          <a className="button secondary" href="/evaluator.html">
+          <a className="button secondary" href={appPath("/evaluator.html")}>
             Evaluator
           </a>
-          <a className="button secondary" href="/studio.html">
+          <a className="button secondary" href={appPath("/studio.html")}>
             Weighting Studio
           </a>
-          <a className="button secondary" href="/results.html">
+          <a className="button secondary" href={appPath("/results.html")}>
             Results
           </a>
-          <a className="button secondary" href="/human.html">
+          <a className="button secondary" href={appPath("/human.html")}>
             Human Benchmark
           </a>
         </div>

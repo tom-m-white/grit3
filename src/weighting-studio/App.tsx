@@ -2,6 +2,7 @@ import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import { GridPanel } from "./GridPanel";
 import { loadQuestions } from "./questionLoader";
 import { QUESTION_IDS, RATING_OPTIONS, RUBRIC_FACTORS } from "./rubric";
+import { appPath } from "./routes";
 import { recalculateProfileEntry } from "./scoring";
 import {
   createDefaultProfile,
@@ -148,19 +149,19 @@ export function App() {
           <h1>GRIT3 Question Weighting Studio</h1>
         </div>
         <div className="topbar-actions">
-          <a className="button secondary" href="/">
+          <a className="button secondary" href={appPath("/")}>
             Home
           </a>
-          <a className="button secondary" href="/evaluator.html">
+          <a className="button secondary" href={appPath("/evaluator.html")}>
             Evaluator
           </a>
-          <a className="button secondary" href="/creator.html">
+          <a className="button secondary" href={appPath("/creator.html")}>
             Creator
           </a>
-          <a className="button secondary" href="/results.html">
+          <a className="button secondary" href={appPath("/results.html")}>
             Results
           </a>
-          <a className="button secondary" href="/human.html">
+          <a className="button secondary" href={appPath("/human.html")}>
             Human Benchmark
           </a>
           <button className="button secondary" type="button" onClick={() => importInputRef.current?.click()}>

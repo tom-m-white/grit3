@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { GridPanel } from "./GridPanel";
 import { loadQuestions } from "./questionLoader";
 import { QUESTION_IDS } from "./rubric";
+import { appPath } from "./routes";
 import {
   getExpectedOutputs,
   loadBundledProfile,
@@ -40,19 +41,19 @@ export function ResultsApp() {
           <h1>GRIT3 Results Viewer</h1>
         </div>
         <div className="topbar-actions">
-          <a className="button secondary" href="/">
+          <a className="button secondary" href={appPath("/")}>
             Home
           </a>
-          <a className="button secondary" href="/evaluator.html">
+          <a className="button secondary" href={appPath("/evaluator.html")}>
             Evaluator
           </a>
-          <a className="button secondary" href="/creator.html">
+          <a className="button secondary" href={appPath("/creator.html")}>
             Creator
           </a>
-          <a className="button secondary" href="/studio.html">
+          <a className="button secondary" href={appPath("/studio.html")}>
             Weighting Studio
           </a>
-          <a className="button secondary" href="/human.html">
+          <a className="button secondary" href={appPath("/human.html")}>
             Human Benchmark
           </a>
         </div>

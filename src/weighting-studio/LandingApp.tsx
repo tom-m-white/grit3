@@ -1,7 +1,10 @@
+import type { CSSProperties } from "react";
+import { appPath } from "./routes";
+
 const tools = [
   {
     title: "Output Evaluator",
-    href: "/evaluator.html",
+    path: "/evaluator.html",
     label: "Validate predictions",
     description: "Paste task and prediction JSON, then inspect exact matches, dimensions, cell accuracy, and visual diffs.",
     metric: "JSON + grid diff",
@@ -9,7 +12,7 @@ const tools = [
   },
   {
     title: "Creator Studio",
-    href: "/creator.html",
+    path: "/creator.html",
     label: "Build tasks",
     description: "Create ARC-style train and test grids, export clean task JSON, or hand a draft directly to the evaluator.",
     metric: "train/test editor",
@@ -17,7 +20,7 @@ const tools = [
   },
   {
     title: "Weighting Studio",
-    href: "/studio.html",
+    path: "/studio.html",
     label: "Score difficulty",
     description: "Review q3-q27 against the structural rubric and export the weighting profile used by results.",
     metric: "7-factor rubric",
@@ -25,7 +28,7 @@ const tools = [
   },
   {
     title: "Results Viewer",
-    href: "/results.html",
+    path: "/results.html",
     label: "Compare models",
     description: "Inspect weighted model scores, coverage, heatmaps, validation issues, and per-question output details.",
     metric: "weighted matrix",
@@ -33,7 +36,7 @@ const tools = [
   },
   {
     title: "Human Benchmark",
-    href: "/human.html",
+    path: "/human.html",
     label: "Run sessions",
     description: "Record local human attempts with timing, submissions, weighted scoring, and exportable session files.",
     metric: "q3-q27 session",
@@ -82,7 +85,7 @@ export function LandingApp() {
   return (
     <main className="landing-shell">
       <header className="landing-topbar" aria-label="GRIT3 website navigation">
-        <a className="landing-brand" href="/" aria-label="GRIT3 home">
+        <a className="landing-brand" href={appPath("/")} aria-label="GRIT3 home">
           <span className="landing-brand-mark" aria-hidden="true">
             <span />
             <span />
@@ -92,11 +95,11 @@ export function LandingApp() {
           <span>GRIT3</span>
         </a>
         <nav className="landing-nav" aria-label="Tool navigation">
-          <a href="/evaluator.html">Evaluator</a>
-          <a href="/creator.html">Creator</a>
-          <a href="/studio.html">Weights</a>
-          <a href="/results.html">Results</a>
-          <a href="/human.html">Human</a>
+          <a href={appPath("/evaluator.html")}>Evaluator</a>
+          <a href={appPath("/creator.html")}>Creator</a>
+          <a href={appPath("/studio.html")}>Weights</a>
+          <a href={appPath("/results.html")}>Results</a>
+          <a href={appPath("/human.html")}>Human</a>
         </nav>
       </header>
 
@@ -109,10 +112,10 @@ export function LandingApp() {
             comparing model runs, and recording human benchmark sessions.
           </p>
           <div className="landing-hero-actions">
-            <a className="button primary landing-cta" href="/evaluator.html">
+            <a className="button primary landing-cta" href={appPath("/evaluator.html")}>
               Open Evaluator
             </a>
-            <a className="button secondary landing-cta" href="/creator.html">
+            <a className="button secondary landing-cta" href={appPath("/creator.html")}>
               Create a Task
             </a>
           </div>
@@ -143,7 +146,7 @@ export function LandingApp() {
         </div>
         <div className="landing-tool-grid">
           {tools.map((tool) => (
-            <a className={`landing-tool-card ${tool.accent}`} href={tool.href} key={tool.title}>
+            <a className={`landing-tool-card ${tool.accent}`} href={appPath(tool.path)} key={tool.title}>
               <span className="landing-tool-label">{tool.label}</span>
               <strong>{tool.title}</strong>
               <span>{tool.description}</span>
@@ -182,4 +185,3 @@ function GridPreview({ grid, index }: { grid: readonly (readonly number[])[]; in
     </div>
   );
 }
-import type { CSSProperties } from "react";
