@@ -832,14 +832,28 @@ h3 {
 .creator-main {
   min-width: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr);
   gap: 16px;
   align-items: start;
 }
 
 .creator-editor,
-.creator-json-panel {
+.creator-export-panel {
   overflow: hidden;
+}
+
+.creator-export-header {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.creator-export-summary {
+  min-width: min(100%, 420px);
+  display: grid;
+  gap: 8px;
+}
+
+.creator-export-actions {
+  margin-left: auto;
 }
 
 .creator-toolbar {
@@ -974,27 +988,6 @@ h3 {
 
 .editable-cell.dimmed {
   opacity: 0.28;
-}
-
-.creator-json-body {
-  display: grid;
-  gap: 10px;
-  padding: 14px;
-}
-
-.json-preview {
-  width: 100%;
-  min-height: 620px;
-  resize: vertical;
-  padding: 11px 12px;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  background: var(--field-bg);
-  color: var(--ink);
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  font-size: 0.82rem;
-  line-height: 1.45;
-  tab-size: 2;
 }
 
 .human-start,

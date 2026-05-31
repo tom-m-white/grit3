@@ -320,15 +320,6 @@ export function CreatorApp() {
     setStatus("Redone.");
   }
 
-  async function copyJson() {
-    try {
-      await navigator.clipboard.writeText(taskJson);
-      setStatus("Copied task JSON.");
-    } catch {
-      setStatus("Clipboard permission was unavailable.");
-    }
-  }
-
   function downloadJson() {
     downloadFile("grit3-created-question.json", taskJson, "application/json");
     setStatus("Downloaded task JSON.");
@@ -558,16 +549,23 @@ export function CreatorApp() {
             </div>
           </section>
 
-          <section className="panel creator-json-panel">
-            <div className="panel-header">
-              <div>
-                <p className="eyebrow">Export</p>
-                <h2>Task JSON</h2>
+          <section className="panel creator-export-panel">
+            <div className="panel-header creator-export-header">
+              <div className="creator-export-summary">
+                <div>
+                  <p className="eyebrow">Export</p>
+                  <h2>Task JSON</h2>
+                </div>
+                {validationErrors.length > 0 ? (
+                  <div className="warning-line validation-line">
+                    {validationErrors.slice(0, 3).join(" ")}
+                    {validationErrors.length > 3 ? ` ${validationErrors.length - 3} more issue(s).` : ""}
+                  </div>
+                ) : (
+                  <div className="success-line">ARC task JSON is valid.</div>
+                )}
               </div>
-              <div className="nav-actions">
-                <button className="button secondary" type="button" onClick={copyJson}>
-                  Copy JSON
-                </button>
+              <div className="nav-actions creator-export-actions">
                 <button className="button secondary" type="button" onClick={downloadJson}>
                   Download
                 </button>
@@ -575,18 +573,6 @@ export function CreatorApp() {
                   Open Evaluator
                 </button>
               </div>
-            </div>
-
-            <div className="creator-json-body">
-              {validationErrors.length > 0 ? (
-                <div className="warning-line validation-line">
-                  {validationErrors.slice(0, 3).join(" ")}
-                  {validationErrors.length > 3 ? ` ${validationErrors.length - 3} more issue(s).` : ""}
-                </div>
-              ) : (
-                <div className="success-line">ARC task JSON is valid.</div>
-              )}
-              <textarea className="json-preview" value={taskJson} readOnly spellCheck={false} />
             </div>
           </section>
         </section>
