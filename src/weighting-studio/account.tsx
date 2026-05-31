@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
+import { ProfileSearch } from "./ProfileSearch";
 import { appPath } from "./routes";
 import { isSupabaseConfigured, requireSupabase, SUPABASE_ENV_KEYS } from "./supabaseClient";
 
@@ -154,6 +155,7 @@ export function AuthGate({
 export function AccountControls({ account, onSignOut }: { account: AppAccount; onSignOut: () => Promise<void> }) {
   return (
     <>
+      <ProfileSearch />
       <a className="button secondary" href={appPath("/profile.html")}>
         Profile
       </a>

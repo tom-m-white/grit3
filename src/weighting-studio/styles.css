@@ -576,6 +576,90 @@ h3 {
   font-weight: 850;
 }
 
+.profile-search {
+  position: relative;
+  width: min(260px, 100%);
+}
+
+.profile-search input {
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--field-bg);
+  color: var(--ink);
+}
+
+.profile-search input:focus {
+  outline: 2px solid rgba(15, 118, 110, 0.2);
+  border-color: var(--accent);
+}
+
+.profile-search-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 40;
+  width: min(360px, calc(100vw - 28px));
+  max-height: 320px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow);
+}
+
+.profile-search-result,
+.profile-search-empty {
+  padding: 10px 11px;
+}
+
+.profile-search-result {
+  display: grid;
+  gap: 4px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+}
+
+.profile-search-result:last-child {
+  border-bottom: 0;
+}
+
+.profile-search-result:hover {
+  background: var(--surface-soft);
+}
+
+.profile-search-result span,
+.profile-title {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.profile-search-result small,
+.profile-search-empty {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.profile-search-result em,
+.role-badge {
+  min-height: 22px;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 6px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--accent-soft);
+  color: var(--accent-dark);
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
 .auth-page,
 .profile-workspace,
 .admin-workspace {
@@ -1847,6 +1931,16 @@ h3 {
   .topbar-actions {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  }
+
+  .profile-search {
+    width: 100%;
+  }
+
+  .profile-search-menu {
+    left: 0;
+    right: auto;
+    width: 100%;
   }
 
   .workspace,

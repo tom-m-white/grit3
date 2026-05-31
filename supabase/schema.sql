@@ -93,6 +93,213 @@ create table if not exists public.created_questions (
   updated_at timestamptz not null default now()
 );
 
+create or replace function public.search_public_profiles(query_text text)
+returns table (
+  username text,
+  role text,
+  completed_run_count integer,
+  best_correct_weight integer,
+  best_total_weight integer,
+  latest_correct_weight integer,
+  latest_total_weight integer,
+  created_draft_count integer,
+  created_submitted_count integer,
+  created_needs_changes_count integer,
+  created_verified_count integer,
+  created_rejected_count integer
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  with normalized as (
+    select trim(coalesce(query_text, '')) as value
+  ),
+  matches as (
+    select p.id, p.username, p.role
+    from public.profiles p, normalized n
+    where char_length(n.value) >= 2
+      and p.username ilike ('%' || n.value || '%')
+    order by
+      case
+        when lower(p.username) = lower(n.value) then 0
+        when p.username ilike (n.value || '%') then 1
+        else 2
+      end,
+      p.username
+    limit 8
+  ),
+  completed_scores as (
+    select
+      br.user_id,
+      br.id,
+      br.completed_at,
+      coalesce(sum(case when bqr.final_correct is true then bqr.weight else 0 end), 0)::integer as correct_weight,
+      coalesce(sum(bqr.weight), 0)::integer as total_weight
+    from public.benchmark_runs br
+    join public.benchmark_question_records bqr on bqr.run_id = br.id
+    where br.status = 'completed'
+      and br.user_id in (select id from matches)
+    group by br.user_id, br.id, br.completed_at
+  ),
+  run_counts as (
+    select user_id, count(*)::integer as completed_run_count
+    from completed_scores
+    group by user_id
+  ),
+  best_scores as (
+    select distinct on (user_id)
+      user_id,
+      correct_weight as best_correct_weight,
+      total_weight as best_total_weight
+    from completed_scores
+    order by
+      user_id,
+      case when total_weight > 0 then correct_weight::numeric / total_weight else 0 end desc,
+      completed_at desc nulls last
+  ),
+  latest_scores as (
+    select distinct on (user_id)
+      user_id,
+      correct_weight as latest_correct_weight,
+      total_weight as latest_total_weight
+    from completed_scores
+    order by user_id, completed_at desc nulls last
+  ),
+  created_counts as (
+    select
+      owner_id,
+      count(*) filter (where review_status = 'draft')::integer as created_draft_count,
+      count(*) filter (where review_status = 'submitted')::integer as created_submitted_count,
+      count(*) filter (where review_status = 'needs_changes')::integer as created_needs_changes_count,
+      count(*) filter (where review_status = 'verified')::integer as created_verified_count,
+      count(*) filter (where review_status = 'rejected')::integer as created_rejected_count
+    from public.created_questions
+    where owner_id in (select id from matches)
+    group by owner_id
+  )
+  select
+    m.username,
+    m.role,
+    coalesce(rc.completed_run_count, 0)::integer,
+    coalesce(bs.best_correct_weight, 0)::integer,
+    coalesce(bs.best_total_weight, 0)::integer,
+    coalesce(ls.latest_correct_weight, 0)::integer,
+    coalesce(ls.latest_total_weight, 0)::integer,
+    coalesce(cc.created_draft_count, 0)::integer,
+    coalesce(cc.created_submitted_count, 0)::integer,
+    coalesce(cc.created_needs_changes_count, 0)::integer,
+    coalesce(cc.created_verified_count, 0)::integer,
+    coalesce(cc.created_rejected_count, 0)::integer
+  from matches m
+  left join run_counts rc on rc.user_id = m.id
+  left join best_scores bs on bs.user_id = m.id
+  left join latest_scores ls on ls.user_id = m.id
+  left join created_counts cc on cc.owner_id = m.id;
+$$;
+
+create or replace function public.get_public_profile(username_text text)
+returns table (
+  username text,
+  role text,
+  completed_run_count integer,
+  best_correct_weight integer,
+  best_total_weight integer,
+  latest_correct_weight integer,
+  latest_total_weight integer,
+  created_draft_count integer,
+  created_submitted_count integer,
+  created_needs_changes_count integer,
+  created_verified_count integer,
+  created_rejected_count integer
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  with target as (
+    select p.id, p.username, p.role
+    from public.profiles p
+    where lower(p.username) = lower(trim(coalesce(username_text, '')))
+    order by p.username
+    limit 1
+  ),
+  completed_scores as (
+    select
+      br.user_id,
+      br.id,
+      br.completed_at,
+      coalesce(sum(case when bqr.final_correct is true then bqr.weight else 0 end), 0)::integer as correct_weight,
+      coalesce(sum(bqr.weight), 0)::integer as total_weight
+    from public.benchmark_runs br
+    join public.benchmark_question_records bqr on bqr.run_id = br.id
+    where br.status = 'completed'
+      and br.user_id in (select id from target)
+    group by br.user_id, br.id, br.completed_at
+  ),
+  run_counts as (
+    select user_id, count(*)::integer as completed_run_count
+    from completed_scores
+    group by user_id
+  ),
+  best_scores as (
+    select distinct on (user_id)
+      user_id,
+      correct_weight as best_correct_weight,
+      total_weight as best_total_weight
+    from completed_scores
+    order by
+      user_id,
+      case when total_weight > 0 then correct_weight::numeric / total_weight else 0 end desc,
+      completed_at desc nulls last
+  ),
+  latest_scores as (
+    select distinct on (user_id)
+      user_id,
+      correct_weight as latest_correct_weight,
+      total_weight as latest_total_weight
+    from completed_scores
+    order by user_id, completed_at desc nulls last
+  ),
+  created_counts as (
+    select
+      owner_id,
+      count(*) filter (where review_status = 'draft')::integer as created_draft_count,
+      count(*) filter (where review_status = 'submitted')::integer as created_submitted_count,
+      count(*) filter (where review_status = 'needs_changes')::integer as created_needs_changes_count,
+      count(*) filter (where review_status = 'verified')::integer as created_verified_count,
+      count(*) filter (where review_status = 'rejected')::integer as created_rejected_count
+    from public.created_questions
+    where owner_id in (select id from target)
+    group by owner_id
+  )
+  select
+    t.username,
+    t.role,
+    coalesce(rc.completed_run_count, 0)::integer,
+    coalesce(bs.best_correct_weight, 0)::integer,
+    coalesce(bs.best_total_weight, 0)::integer,
+    coalesce(ls.latest_correct_weight, 0)::integer,
+    coalesce(ls.latest_total_weight, 0)::integer,
+    coalesce(cc.created_draft_count, 0)::integer,
+    coalesce(cc.created_submitted_count, 0)::integer,
+    coalesce(cc.created_needs_changes_count, 0)::integer,
+    coalesce(cc.created_verified_count, 0)::integer,
+    coalesce(cc.created_rejected_count, 0)::integer
+  from target t
+  left join run_counts rc on rc.user_id = t.id
+  left join best_scores bs on bs.user_id = t.id
+  left join latest_scores ls on ls.user_id = t.id
+  left join created_counts cc on cc.owner_id = t.id;
+$$;
+
+revoke all on function public.search_public_profiles(text) from public, anon;
+revoke all on function public.get_public_profile(text) from public, anon;
+grant execute on function public.search_public_profiles(text) to authenticated;
+grant execute on function public.get_public_profile(text) to authenticated;
+
 drop trigger if exists profiles_set_updated_at on public.profiles;
 create trigger profiles_set_updated_at
 before update on public.profiles

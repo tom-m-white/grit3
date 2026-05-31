@@ -3,6 +3,7 @@ import { AccountControls, AuthGate, type AppAccount } from "./account";
 import { type BenchmarkRunBundle, listUserRuns } from "./benchmarkStore";
 import { type CreatedQuestionRow, listUserCreatedQuestions } from "./createdQuestionsStore";
 import { summarizeHumanSession } from "./humanBenchmarkSession";
+import { getPublicProfile, type PublicProfileSummary } from "./publicProfileStore";
 import { appPath } from "./routes";
 
 export function ProfileApp() {
@@ -14,6 +15,9 @@ export function ProfileApp() {
 }
 
 function ProfileWorkspace({ account, onSignOut }: { account: AppAccount; onSignOut: () => Promise<void> }) {
+  const [publicUsername] = useState(() => getRequestedUsername());
+  const isPublicProfile = publicUsername.length > 0;
+  const [publicProfile, setPublicProfile] = useState<PublicProfileSummary | null>(null);
   const [runs, setRuns] = useState<BenchmarkRunBundle[]>([]);
   const [createdQuestions, setCreatedQuestions] = useState<CreatedQuestionRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,11 +34,18 @@ function ProfileWorkspace({ account, onSignOut }: { account: AppAccount; onSignO
 
   useEffect(() => {
     void refresh();
-  }, [account.user.id]);
+  }, [account.user.id, publicUsername]);
 
   async function refresh() {
     setLoading(true);
     try {
+      if (isPublicProfile) {
+        const nextProfile = await getPublicProfile(publicUsername);
+        setPublicProfile(nextProfile);
+        setStatus(nextProfile ? `${nextProfile.username} loaded.` : "Profile not found.");
+        return;
+      }
+
       const [nextRuns, nextQuestions] = await Promise.all([
         listUserRuns(account.user.id),
         listUserCreatedQuestions(account.user.id)
@@ -54,7 +65,10 @@ function ProfileWorkspace({ account, onSignOut }: { account: AppAccount; onSignO
       <header className="topbar">
         <div>
           <p className="eyebrow">grit3</p>
-          <h1>{account.profile.username}</h1>
+          <h1 className="profile-title">
+            {isPublicProfile ? publicProfile?.username ?? publicUsername : account.profile.username}
+            {publicProfile?.role === "admin" || (!isPublicProfile && account.profile.role === "admin") ? <RoleBadge /> : null}
+          </h1>
         </div>
         <div className="topbar-actions">
           <a className="button secondary" href={appPath("/")}>
@@ -76,6 +90,8 @@ function ProfileWorkspace({ account, onSignOut }: { account: AppAccount; onSignO
       <section className="profile-workspace">
         {loading ? (
           <div className="empty-state">Loading profile...</div>
+        ) : isPublicProfile ? (
+          <PublicProfileView profile={publicProfile} requestedUsername={publicUsername} />
         ) : (
           <>
             <section className="panel profile-panel">
@@ -132,6 +148,88 @@ function ProfileWorkspace({ account, onSignOut }: { account: AppAccount; onSignO
         {status}
       </div>
     </main>
+  );
+}
+
+function PublicProfileView({
+  profile,
+  requestedUsername
+}: {
+  profile: PublicProfileSummary | null;
+  requestedUsername: string;
+}) {
+  if (!profile) {
+    return (
+      <section className="panel profile-panel">
+        <div className="panel-header">
+          <div>
+            <p className="eyebrow">Public profile</p>
+            <h2>{requestedUsername}</h2>
+          </div>
+          <a className="button secondary" href={appPath("/profile.html")}>
+            My Profile
+          </a>
+        </div>
+        <div className="empty-state">No profile matched that username.</div>
+      </section>
+    );
+  }
+
+  return (
+    <>
+      <section className="panel profile-panel">
+        <div className="panel-header">
+          <div>
+            <p className="eyebrow">Public profile</p>
+            <h2 className="profile-title">
+              {profile.username}
+              {profile.role === "admin" ? <RoleBadge /> : null}
+            </h2>
+          </div>
+          <a className="button secondary" href={appPath("/profile.html")}>
+            My Profile
+          </a>
+        </div>
+        <div className="summary-metrics profile-metrics">
+          <Metric label="Completed runs" value={String(profile.completed_run_count)} />
+          <Metric label="Best score" value={formatScore(profile.best_correct_weight, profile.best_total_weight)} />
+          <Metric label="Latest score" value={formatScore(profile.latest_correct_weight, profile.latest_total_weight)} />
+          <Metric label="Verified questions" value={String(profile.created_verified_count)} />
+        </div>
+      </section>
+
+      <section className="panel profile-panel">
+        <div className="panel-header">
+          <div>
+            <p className="eyebrow">Creator</p>
+            <h2>Question review counts</h2>
+          </div>
+          <span className="panel-meta">summary only</span>
+        </div>
+        <div className="summary-table-wrap">
+          <table className="summary-table">
+            <thead>
+              <tr>
+                <th>Draft</th>
+                <th>Submitted</th>
+                <th>Needs changes</th>
+                <th>Verified</th>
+                <th>Rejected</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>{profile.created_draft_count}</td>
+                <td>{profile.created_submitted_count}</td>
+                <td>{profile.created_needs_changes_count}</td>
+                <td>{profile.created_verified_count}</td>
+                <td>{profile.created_rejected_count}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </>
   );
 }
 
@@ -223,4 +321,16 @@ function Metric({ label, value }: { label: string; value: string }) {
 
 function formatDate(value: string): string {
   return new Date(value).toLocaleString();
+}
+
+function formatScore(correct: number, total: number): string {
+  return total > 0 ? `${correct}/${total}` : "n/a";
+}
+
+function RoleBadge() {
+  return <span className="role-badge admin">ADMIN</span>;
+}
+
+function getRequestedUsername(): string {
+  return new URLSearchParams(window.location.search).get("u")?.trim() ?? "";
 }
