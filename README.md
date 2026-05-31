@@ -6,7 +6,7 @@ The app is built with Vite and React, deploys as static files, and is configured
 
 ## Tools
 
-- **Landing page** (`/`) - website-style entry point for choosing a GRIT3 workflow.
+- **Landing page** (`/`) - website-style entry point with a top LLM leaderboard and direct workflow links.
 - **Output Evaluator** (`/evaluator.html`) - paste task JSON and prediction JSON, then inspect exact matches, cell accuracy, dimensions, and visual diffs.
 - **Creator Studio** (`/creator.html`) - build ARC-style `train` and `test` grids, export task JSON, or send a draft directly to the evaluator.
 - **Weighting Studio** (`/studio.html`) - manually rate q3-q27 with a structural rubric and export the weighting profile.

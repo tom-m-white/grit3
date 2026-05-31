@@ -1,5 +1,18 @@
 import type { CSSProperties } from "react";
+import { loadBundledProfile, loadBundledResults } from "./resultsData";
 import { appPath } from "./routes";
+
+const PROFILE = loadBundledProfile();
+const LEADERBOARD = loadBundledResults(PROFILE)
+  .filter((model) => model.summary.evaluatedCount > 0)
+  .sort(
+    (a, b) =>
+      b.summary.fullProgressPercent - a.summary.fullProgressPercent ||
+      (b.summary.evaluatedWeightedPercent ?? -1) - (a.summary.evaluatedWeightedPercent ?? -1) ||
+      b.summary.coveragePercent - a.summary.coveragePercent ||
+      a.metadata.modelName.localeCompare(b.metadata.modelName)
+  )
+  .slice(0, 5);
 
 const tools = [
   {
@@ -139,6 +152,49 @@ export function LandingApp() {
         </div>
       </section>
 
+      <section className="landing-section landing-leaderboard-section" aria-labelledby="leaderboard-title">
+        <div className="landing-section-heading landing-leaderboard-heading">
+          <div>
+            <p className="eyebrow">Leaderboard</p>
+            <h2 id="leaderboard-title">Top recorded LLM runs.</h2>
+          </div>
+          <a className="button secondary landing-results-link" href={appPath("/results.html")}>
+            View Full Results
+          </a>
+        </div>
+        <div className="landing-leaderboard-wrap">
+          <table className="landing-leaderboard">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Model</th>
+                <th>Full weighted</th>
+                <th>Eval weighted</th>
+                <th>Correct</th>
+                <th>Coverage</th>
+              </tr>
+            </thead>
+            <tbody>
+              {LEADERBOARD.map((model, index) => (
+                <tr key={model.id}>
+                  <td>{index + 1}</td>
+                  <td>
+                    <strong>{model.metadata.modelName}</strong>
+                    <span>{model.metadata.thinkingLevel ? `${model.metadata.thinkingLevel} thinking` : model.fileName}</span>
+                  </td>
+                  <td>{formatPercent(model.summary.fullProgressPercent)}</td>
+                  <td>{formatNullablePercent(model.summary.evaluatedWeightedPercent)}</td>
+                  <td>
+                    {model.summary.correctCount}/{model.summary.evaluatedCount}
+                  </td>
+                  <td>{formatPercent(model.summary.coveragePercent)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       <section className="landing-section" aria-labelledby="tools-title">
         <div className="landing-section-heading">
           <p className="eyebrow">Choose a function</p>
@@ -172,6 +228,14 @@ export function LandingApp() {
       </section>
     </main>
   );
+}
+
+function formatNullablePercent(value: number | null): string {
+  return value === null ? "n/a" : formatPercent(value);
+}
+
+function formatPercent(value: number): string {
+  return `${value.toFixed(Number.isInteger(value) ? 0 : 1)}%`;
 }
 
 function GridPreview({ grid, index }: { grid: readonly (readonly number[])[]; index: number }) {
