@@ -1,8 +1,8 @@
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import { AppHeader } from "./AppHeader";
 import { GridPanel } from "./GridPanel";
 import { loadQuestions } from "./questionLoader";
 import { QUESTION_IDS, RATING_OPTIONS, RUBRIC_FACTORS } from "./rubric";
-import { appPath } from "./routes";
 import { recalculateProfileEntry } from "./scoring";
 import {
   createDefaultProfile,
@@ -143,42 +143,16 @@ export function App() {
 
   return (
     <main className="app-shell">
-      <header className="topbar">
-        <div>
-          <p className="eyebrow">grit3</p>
-          <h1>GRIT3 Question Weighting Studio</h1>
-        </div>
-        <div className="topbar-actions">
-          <a className="button secondary" href={appPath("/")}>
-            Home
-          </a>
-          <a className="button secondary" href={appPath("/evaluator.html")}>
-            Evaluator
-          </a>
-          <a className="button secondary" href={appPath("/creator.html")}>
-            Creator
-          </a>
-          <a className="button secondary" href={appPath("/results.html")}>
-            Results
-          </a>
-          <a className="button secondary" href={appPath("/human.html")}>
-            Human Benchmark
-          </a>
-          <a className="button secondary" href={appPath("/profile.html")}>
-            Profile
-          </a>
-          <button className="button secondary" type="button" onClick={() => importInputRef.current?.click()}>
-            Import JSON
-          </button>
-          <button className="button secondary" type="button" onClick={exportCsv}>
-            Export CSV
-          </button>
-          <button className="button primary" type="button" onClick={exportJson}>
-            Export JSON
-          </button>
-          <input ref={importInputRef} className="sr-only" type="file" accept="application/json,.json" onChange={importJson} />
-        </div>
-      </header>
+      <AppHeader
+        title="Question Weighting Studio"
+        searchId="weighting-profile-search"
+        actions={[
+          { label: "Import JSON", onClick: () => importInputRef.current?.click() },
+          { label: "Export CSV", onClick: exportCsv },
+          { label: "Export JSON", onClick: exportJson }
+        ]}
+      />
+      <input ref={importInputRef} className="sr-only" type="file" accept="application/json,.json" onChange={importJson} />
 
       <div className="workspace">
         <aside className="sidebar" aria-label="Question navigation">

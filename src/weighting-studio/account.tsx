@@ -1,7 +1,6 @@
 import { type ReactNode, useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
-import { ProfileSearch } from "./ProfileSearch";
-import { appPath } from "./routes";
+import { AppHeader } from "./AppHeader";
 import { isSupabaseConfigured, requireSupabase, SUPABASE_ENV_KEYS } from "./supabaseClient";
 
 export type ProfileRole = "user" | "admin";
@@ -152,26 +151,6 @@ export function AuthGate({
   return <AuthShell title={title} body={<div className="empty-state">Account state could not be resolved.</div>} />;
 }
 
-export function AccountControls({ account, onSignOut }: { account: AppAccount; onSignOut: () => Promise<void> }) {
-  return (
-    <>
-      <ProfileSearch />
-      <a className="button secondary" href={appPath("/profile.html")}>
-        Profile
-      </a>
-      {account.profile.role === "admin" ? (
-        <a className="button secondary" href={appPath("/admin.html")}>
-          Admin
-        </a>
-      ) : null}
-      <span className="account-pill">{account.profile.username}</span>
-      <button className="button secondary" type="button" onClick={() => void onSignOut()}>
-        Sign Out
-      </button>
-    </>
-  );
-}
-
 export async function fetchUserProfile(userId: string): Promise<UserProfile | null> {
   const client = requireSupabase();
   const { data, error } = await client.from("profiles").select("*").eq("id", userId).maybeSingle();
@@ -212,17 +191,7 @@ export function normalizeUsername(username: string): string {
 function SupabaseSetupPanel() {
   return (
     <main className="app-shell">
-      <header className="topbar">
-        <div>
-          <p className="eyebrow">Account setup</p>
-          <h1>Supabase is required</h1>
-        </div>
-        <div className="topbar-actions">
-          <a className="button secondary" href={appPath("/")}>
-            Home
-          </a>
-        </div>
-      </header>
+      <AppHeader title="Supabase is required" searchId="setup-profile-search" />
       <section className="auth-page">
         <div className="panel auth-panel">
           <div className="panel-header">
@@ -244,23 +213,7 @@ function SupabaseSetupPanel() {
 function AuthShell({ title, body }: { title: string; body: ReactNode }) {
   return (
     <main className="app-shell">
-      <header className="topbar">
-        <div>
-          <p className="eyebrow">Account</p>
-          <h1>{title}</h1>
-        </div>
-        <div className="topbar-actions">
-          <a className="button secondary" href={appPath("/")}>
-            Home
-          </a>
-          <a className="button secondary" href={appPath("/creator.html")}>
-            Creator
-          </a>
-          <a className="button secondary" href={appPath("/human.html")}>
-            Human Benchmark
-          </a>
-        </div>
-      </header>
+      <AppHeader title={title} searchId="auth-profile-search" />
       <section className="auth-page">{body}</section>
     </main>
   );

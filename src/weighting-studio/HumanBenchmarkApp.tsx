@@ -1,6 +1,7 @@
 import bundledProfile from "../../grit3-weighting-profile.json";
 import { type CSSProperties, type PointerEvent, useEffect, useMemo, useRef, useState } from "react";
-import { AccountControls, AuthGate, type AppAccount } from "./account";
+import { AppHeader } from "./AppHeader";
+import { AuthGate, type AppAccount } from "./account";
 import {
   type BenchmarkQuestionRecordRow,
   type BenchmarkRunBundle,
@@ -526,40 +527,20 @@ function HumanBenchmarkWorkspace({ account, onSignOut }: { account: AppAccount; 
 
   return (
     <main className="app-shell">
-      <header className="topbar">
-        <div>
-          <p className="eyebrow">grit3</p>
-          <h1>GRIT3 Human Benchmark</h1>
-        </div>
-        <div className="topbar-actions">
-          <a className="button secondary" href={appPath("/")}>
-            Home
-          </a>
-          <a className="button secondary" href={appPath("/evaluator.html")}>
-            Evaluator
-          </a>
-          <a className="button secondary" href={appPath("/creator.html")}>
-            Creator
-          </a>
-          <a className="button secondary" href={appPath("/studio.html")}>
-            Weighting Studio
-          </a>
-          <a className="button secondary" href={appPath("/results.html")}>
-            Results
-          </a>
-          {run ? (
-            <>
-              <button className="button secondary" type="button" onClick={() => void exportCsv()}>
-                Export CSV
-              </button>
-              <button className="button secondary" type="button" onClick={() => void exportJson()}>
-                Export JSON
-              </button>
-            </>
-          ) : null}
-          <AccountControls account={account} onSignOut={onSignOut} />
-        </div>
-      </header>
+      <AppHeader
+        title="Human Benchmark"
+        account={account}
+        onSignOut={onSignOut}
+        searchId="human-profile-search"
+        actions={
+          run
+            ? [
+                { label: "Export CSV", onClick: () => void exportCsv() },
+                { label: "Export JSON", onClick: () => void exportJson() }
+              ]
+            : []
+        }
+      />
 
       {loading ? (
         <section className="panel human-empty-panel">

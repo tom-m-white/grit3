@@ -1,4 +1,6 @@
 import type { CSSProperties } from "react";
+import { APP_TOOL_LINKS } from "./AppHeader";
+import { ProfileSearch } from "./ProfileSearch";
 import { loadBundledProfile, loadBundledResults } from "./resultsData";
 import { appPath } from "./routes";
 
@@ -107,13 +109,20 @@ export function LandingApp() {
           </span>
           <span>GRIT3</span>
         </a>
-        <nav className="landing-nav" aria-label="Tool navigation">
-          <a href={appPath("/evaluator.html")}>Evaluator</a>
-          <a href={appPath("/creator.html")}>Creator</a>
-          <a href={appPath("/studio.html")}>Weights</a>
-          <a href={appPath("/results.html")}>Results</a>
-          <a href={appPath("/human.html")}>Human</a>
-          <a href={appPath("/profile.html")}>Profile</a>
+        <nav className="landing-nav" aria-label="GRIT3 navigation">
+          <details className="header-menu landing-menu">
+            <summary className="button secondary">Tools</summary>
+            <div className="header-menu-list">
+              {APP_TOOL_LINKS.map((tool) => (
+                <a className="header-menu-item" href={appPath(tool.path)} key={tool.path}>
+                  {tool.label}
+                </a>
+              ))}
+            </div>
+          </details>
+          <a className="button secondary landing-profile-link" href={appPath("/profile.html")}>
+            Profile
+          </a>
         </nav>
       </header>
 
@@ -125,6 +134,14 @@ export function LandingApp() {
             A focused toolkit for building grid-reasoning tasks, evaluating outputs, weighting question difficulty,
             comparing model runs, and recording human benchmark sessions.
           </p>
+          <div className="landing-profile-search-block">
+            <ProfileSearch
+              id="landing-profile-search"
+              label="Search public profiles"
+              placeholder="Search public profiles"
+              variant="hero"
+            />
+          </div>
           <div className="landing-hero-actions">
             <a className="button primary landing-cta" href={appPath("/evaluator.html")}>
               Open Evaluator

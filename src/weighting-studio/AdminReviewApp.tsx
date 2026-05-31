@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { AccountControls, AuthGate, type AppAccount } from "./account";
+import { AppHeader } from "./AppHeader";
+import { AuthGate, type AppAccount } from "./account";
 import {
   type CreatedQuestionRow,
   type CreatedQuestionStatus,
   listReviewQueue,
   updateCreatedQuestionReview
 } from "./createdQuestionsStore";
-import { appPath } from "./routes";
 
 const REVIEW_STATUSES: CreatedQuestionStatus[] = ["draft", "submitted", "needs_changes", "verified", "rejected"];
 
@@ -83,24 +83,7 @@ function AdminReviewWorkspace({ account, onSignOut }: { account: AppAccount; onS
 
   return (
     <main className="app-shell">
-      <header className="topbar">
-        <div>
-          <p className="eyebrow">grit3</p>
-          <h1>Admin Review</h1>
-        </div>
-        <div className="topbar-actions">
-          <a className="button secondary" href={appPath("/")}>
-            Home
-          </a>
-          <a className="button secondary" href={appPath("/profile.html")}>
-            Profile
-          </a>
-          <a className="button secondary" href={appPath("/creator.html")}>
-            Creator
-          </a>
-          <AccountControls account={account} onSignOut={onSignOut} />
-        </div>
-      </header>
+      <AppHeader title="Admin Review" account={account} onSignOut={onSignOut} searchId="admin-profile-search" />
 
       {account.profile.role !== "admin" ? (
         <section className="profile-workspace">

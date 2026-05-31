@@ -1,27 +1,51 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import {
   canSearchProfiles,
   publicProfilePath,
   searchPublicProfiles,
   type PublicProfileSummary
 } from "./publicProfileStore";
+import { isSupabaseConfigured } from "./supabaseClient";
 
-export function ProfileSearch() {
+interface ProfileSearchProps {
+  className?: string;
+  id?: string;
+  label?: string;
+  placeholder?: string;
+  variant?: "compact" | "hero";
+}
+
+export function ProfileSearch({
+  className = "",
+  id,
+  label = "Search profiles",
+  placeholder = "Search profiles",
+  variant = "compact"
+}: ProfileSearchProps) {
+  const generatedId = useId();
+  const inputId = id ?? `profile-search-${generatedId}`;
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<PublicProfileSummary[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("Search profiles");
+  const [message, setMessage] = useState(label);
   const requestIdRef = useRef(0);
 
   useEffect(() => {
     const requestId = requestIdRef.current + 1;
     requestIdRef.current = requestId;
 
+    if (!isSupabaseConfigured) {
+      setResults([]);
+      setLoading(false);
+      setMessage("Profile search is unavailable.");
+      return;
+    }
+
     if (!canSearchProfiles(query)) {
       setResults([]);
       setLoading(false);
-      setMessage("Search profiles");
+      setMessage(label);
       return;
     }
 
@@ -52,15 +76,15 @@ export function ProfileSearch() {
     }, 180);
 
     return () => window.clearTimeout(timeout);
-  }, [query]);
+  }, [label, query]);
 
   return (
-    <div className="profile-search">
-      <label className="sr-only" htmlFor="global-profile-search">
-        Search profiles
+    <div className={["profile-search", variant === "hero" ? "profile-search-hero" : "", className].filter(Boolean).join(" ")}>
+      <label className="sr-only" htmlFor={inputId}>
+        {label}
       </label>
       <input
-        id="global-profile-search"
+        id={inputId}
         value={query}
         onChange={(event) => {
           setQuery(event.target.value);
@@ -72,10 +96,11 @@ export function ProfileSearch() {
             setOpen(false);
           }
         }}
-        placeholder="Search profiles"
+        placeholder={isSupabaseConfigured ? placeholder : "Profile search unavailable"}
         autoComplete="off"
+        disabled={!isSupabaseConfigured}
       />
-      {open && canSearchProfiles(query) ? (
+      {open && isSupabaseConfigured && canSearchProfiles(query) ? (
         <div className="profile-search-menu" role="listbox" aria-label="Profile search results">
           {loading ? <div className="profile-search-empty">Searching...</div> : null}
           {!loading && results.length === 0 ? <div className="profile-search-empty">{message}</div> : null}

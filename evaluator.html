@@ -92,6 +92,55 @@
       flex-wrap: wrap;
     }
 
+    .header-menu {
+      position: relative;
+    }
+
+    .header-menu summary {
+      list-style: none;
+    }
+
+    .header-menu summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .header-menu[open] summary {
+      border-color: var(--accent);
+      color: var(--accent-dark);
+    }
+
+    .header-menu-list {
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      z-index: 40;
+      width: min(230px, calc(100vw - 28px));
+      display: grid;
+      gap: 2px;
+      padding: 6px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .header-menu-item {
+      min-height: 36px;
+      display: flex;
+      align-items: center;
+      padding: 8px 10px;
+      border-radius: 6px;
+      color: var(--ink);
+      line-height: 1.15;
+    }
+
+    .header-menu-item:hover,
+    .header-menu-item:focus {
+      background: var(--surface-alt);
+      color: var(--accent-dark);
+      outline: 0;
+    }
+
     .title-block {
       min-width: 0;
       display: grid;
@@ -108,6 +157,14 @@
     h1 {
       font-size: 1.15rem;
       line-height: 1.2;
+    }
+
+    .title-home {
+      color: var(--accent-dark);
+    }
+
+    .title-home:hover {
+      color: var(--accent);
     }
 
     .subtitle,
@@ -586,6 +643,16 @@
       .button {
         width: 100%;
       }
+
+      .header-menu {
+        width: 100%;
+      }
+
+      .header-menu-list {
+        left: 0;
+        right: auto;
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -593,16 +660,21 @@
   <main class="app">
     <header class="topbar" aria-label="gritv3 evaluator header">
       <div class="title-block">
-        <h1>gritv3 Output Evaluator</h1>
+        <h1><a class="title-home" href="/grit3/">gritv3</a> Output Evaluator</h1>
         <div class="subtitle">Paste a task and strict JSON prediction, then compare against the hidden-answer field.</div>
       </div>
       <div class="topbar-side">
         <nav class="topbar-actions" aria-label="Evaluator navigation">
-          <a class="button ghost" href="/grit3/">Home</a>
-          <a class="button ghost" href="/grit3/creator.html">Creator</a>
-          <a class="button ghost" href="/grit3/studio.html">Weighting Studio</a>
-          <a class="button ghost" href="/grit3/results.html">Results</a>
-          <a class="button ghost" href="/grit3/human.html">Human Benchmark</a>
+          <details class="header-menu">
+            <summary class="button ghost">Tools</summary>
+            <div class="header-menu-list">
+              <a class="header-menu-item" href="/grit3/evaluator.html">Evaluator</a>
+              <a class="header-menu-item" href="/grit3/creator.html">Creator</a>
+              <a class="header-menu-item" href="/grit3/studio.html">Weighting Studio</a>
+              <a class="header-menu-item" href="/grit3/results.html">Results</a>
+              <a class="header-menu-item" href="/grit3/human.html">Human Benchmark</a>
+            </div>
+          </details>
           <a class="button ghost" href="/grit3/profile.html">Profile</a>
         </nav>
         <div id="status" class="status" role="status" aria-live="polite">Ready.</div>

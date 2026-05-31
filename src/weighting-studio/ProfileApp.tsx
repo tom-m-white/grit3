@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { AccountControls, AuthGate, type AppAccount } from "./account";
+import { AppHeader } from "./AppHeader";
+import { AuthGate, type AppAccount } from "./account";
 import { type BenchmarkRunBundle, listUserRuns } from "./benchmarkStore";
 import { type CreatedQuestionRow, listUserCreatedQuestions } from "./createdQuestionsStore";
 import { summarizeHumanSession } from "./humanBenchmarkSession";
@@ -7,6 +8,11 @@ import { getPublicProfile, type PublicProfileSummary } from "./publicProfileStor
 import { appPath } from "./routes";
 
 export function ProfileApp() {
+  const publicUsername = getRequestedUsername();
+  if (publicUsername) {
+    return <PublicProfilePage publicUsername={publicUsername} />;
+  }
+
   return (
     <AuthGate title="Sign in to view profile">
       {(account, controls) => <ProfileWorkspace account={account} onSignOut={controls.signOut} />}
@@ -14,10 +20,52 @@ export function ProfileApp() {
   );
 }
 
-function ProfileWorkspace({ account, onSignOut }: { account: AppAccount; onSignOut: () => Promise<void> }) {
-  const [publicUsername] = useState(() => getRequestedUsername());
-  const isPublicProfile = publicUsername.length > 0;
+function PublicProfilePage({ publicUsername }: { publicUsername: string }) {
   const [publicProfile, setPublicProfile] = useState<PublicProfileSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState("Loading profile...");
+
+  useEffect(() => {
+    async function loadPublicProfile() {
+      setLoading(true);
+      try {
+        const nextProfile = await getPublicProfile(publicUsername);
+        setPublicProfile(nextProfile);
+        setStatus(nextProfile ? `${nextProfile.username} loaded.` : "Profile not found.");
+      } catch (error) {
+        setStatus(error instanceof Error ? error.message : "Profile could not be loaded.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    void loadPublicProfile();
+  }, [publicUsername]);
+
+  return (
+    <main className="app-shell">
+      <AppHeader
+        title={
+          <span className="profile-title">
+            {publicProfile?.username ?? publicUsername}
+            {publicProfile?.role === "admin" ? <RoleBadge /> : null}
+          </span>
+        }
+        searchId="public-profile-search"
+      />
+
+      <section className="profile-workspace">
+        {loading ? <div className="empty-state">Loading profile...</div> : <PublicProfileView profile={publicProfile} requestedUsername={publicUsername} />}
+      </section>
+
+      <div className="save-status" role="status">
+        {status}
+      </div>
+    </main>
+  );
+}
+
+function ProfileWorkspace({ account, onSignOut }: { account: AppAccount; onSignOut: () => Promise<void> }) {
   const [runs, setRuns] = useState<BenchmarkRunBundle[]>([]);
   const [createdQuestions, setCreatedQuestions] = useState<CreatedQuestionRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,18 +82,11 @@ function ProfileWorkspace({ account, onSignOut }: { account: AppAccount; onSignO
 
   useEffect(() => {
     void refresh();
-  }, [account.user.id, publicUsername]);
+  }, [account.user.id]);
 
   async function refresh() {
     setLoading(true);
     try {
-      if (isPublicProfile) {
-        const nextProfile = await getPublicProfile(publicUsername);
-        setPublicProfile(nextProfile);
-        setStatus(nextProfile ? `${nextProfile.username} loaded.` : "Profile not found.");
-        return;
-      }
-
       const [nextRuns, nextQuestions] = await Promise.all([
         listUserRuns(account.user.id),
         listUserCreatedQuestions(account.user.id)
@@ -62,36 +103,21 @@ function ProfileWorkspace({ account, onSignOut }: { account: AppAccount; onSignO
 
   return (
     <main className="app-shell">
-      <header className="topbar">
-        <div>
-          <p className="eyebrow">grit3</p>
-          <h1 className="profile-title">
-            {isPublicProfile ? publicProfile?.username ?? publicUsername : account.profile.username}
-            {publicProfile?.role === "admin" || (!isPublicProfile && account.profile.role === "admin") ? <RoleBadge /> : null}
-          </h1>
-        </div>
-        <div className="topbar-actions">
-          <a className="button secondary" href={appPath("/")}>
-            Home
-          </a>
-          <a className="button secondary" href={appPath("/creator.html")}>
-            Creator
-          </a>
-          <a className="button secondary" href={appPath("/human.html")}>
-            Human Benchmark
-          </a>
-          <a className="button secondary" href={appPath("/results.html")}>
-            Results
-          </a>
-          <AccountControls account={account} onSignOut={onSignOut} />
-        </div>
-      </header>
+      <AppHeader
+        title={
+          <span className="profile-title">
+            {account.profile.username}
+            {account.profile.role === "admin" ? <RoleBadge /> : null}
+          </span>
+        }
+        account={account}
+        onSignOut={onSignOut}
+        searchId="profile-page-search"
+      />
 
       <section className="profile-workspace">
         {loading ? (
           <div className="empty-state">Loading profile...</div>
-        ) : isPublicProfile ? (
-          <PublicProfileView profile={publicProfile} requestedUsername={publicUsername} />
         ) : (
           <>
             <section className="panel profile-panel">

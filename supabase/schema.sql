@@ -295,10 +295,10 @@ as $$
   left join created_counts cc on cc.owner_id = t.id;
 $$;
 
-revoke all on function public.search_public_profiles(text) from public, anon;
-revoke all on function public.get_public_profile(text) from public, anon;
-grant execute on function public.search_public_profiles(text) to authenticated;
-grant execute on function public.get_public_profile(text) to authenticated;
+revoke all on function public.search_public_profiles(text) from public;
+revoke all on function public.get_public_profile(text) from public;
+grant execute on function public.search_public_profiles(text) to anon, authenticated;
+grant execute on function public.get_public_profile(text) to anon, authenticated;
 
 drop trigger if exists profiles_set_updated_at on public.profiles;
 create trigger profiles_set_updated_at

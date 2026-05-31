@@ -1,5 +1,6 @@
 import { type CSSProperties, type PointerEvent, useEffect, useMemo, useRef, useState } from "react";
-import { AccountControls, AuthGate, type AppAccount } from "./account";
+import { AppHeader } from "./AppHeader";
+import { AuthGate, type AppAccount } from "./account";
 import { saveCreatedQuestion } from "./createdQuestionsStore";
 import { ARC_COLOR_MAP } from "./GridPanel";
 import {
@@ -371,30 +372,7 @@ function CreatorWorkspace({ account, onSignOut }: { account: AppAccount; onSignO
 
   return (
     <main className="app-shell">
-      <header className="topbar">
-        <div>
-          <p className="eyebrow">grit3</p>
-          <h1>GRIT3 Creator Studio</h1>
-        </div>
-        <div className="topbar-actions">
-          <a className="button secondary" href={appPath("/")}>
-            Home
-          </a>
-          <a className="button secondary" href={appPath("/evaluator.html")}>
-            Evaluator
-          </a>
-          <a className="button secondary" href={appPath("/studio.html")}>
-            Weighting Studio
-          </a>
-          <a className="button secondary" href={appPath("/results.html")}>
-            Results
-          </a>
-          <a className="button secondary" href={appPath("/human.html")}>
-            Human Benchmark
-          </a>
-          <AccountControls account={account} onSignOut={onSignOut} />
-        </div>
-      </header>
+      <AppHeader title="Creator Studio" account={account} onSignOut={onSignOut} searchId="creator-profile-search" />
 
       <div className="creator-workspace">
         <aside className="sidebar creator-sidebar" aria-label="Created case navigation">
