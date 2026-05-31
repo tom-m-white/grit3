@@ -7,8 +7,8 @@ const LEADERBOARD = loadBundledResults(PROFILE)
   .filter((model) => model.summary.evaluatedCount > 0)
   .sort(
     (a, b) =>
-      b.summary.fullProgressPercent - a.summary.fullProgressPercent ||
       (b.summary.evaluatedWeightedPercent ?? -1) - (a.summary.evaluatedWeightedPercent ?? -1) ||
+      b.summary.fullProgressPercent - a.summary.fullProgressPercent ||
       b.summary.coveragePercent - a.summary.coveragePercent ||
       a.metadata.modelName.localeCompare(b.metadata.modelName)
   )
@@ -168,8 +168,8 @@ export function LandingApp() {
               <tr>
                 <th>Rank</th>
                 <th>Model</th>
-                <th>Full weighted</th>
                 <th>Eval weighted</th>
+                <th>Full weighted</th>
                 <th>Correct</th>
                 <th>Coverage</th>
               </tr>
@@ -182,8 +182,8 @@ export function LandingApp() {
                     <strong>{model.metadata.modelName}</strong>
                     <span>{model.metadata.thinkingLevel ? `${model.metadata.thinkingLevel} thinking` : model.fileName}</span>
                   </td>
-                  <td>{formatPercent(model.summary.fullProgressPercent)}</td>
                   <td>{formatNullablePercent(model.summary.evaluatedWeightedPercent)}</td>
+                  <td>{formatPercent(model.summary.fullProgressPercent)}</td>
                   <td>
                     {model.summary.correctCount}/{model.summary.evaluatedCount}
                   </td>
