@@ -51,8 +51,8 @@ const tools = [
     title: "Human Benchmark",
     path: "/human.html",
     label: "Run sessions",
-    description: "Record local human attempts with timing, submissions, weighted scoring, and exportable session files.",
-    metric: "q3-q27 session",
+    description: "Answer one random unseen question at a time with account-backed progress, timing, and submissions.",
+    metric: "random q3-q27",
     accent: "rose"
   }
 ] as const;
@@ -113,6 +113,7 @@ export function LandingApp() {
           <a href={appPath("/studio.html")}>Weights</a>
           <a href={appPath("/results.html")}>Results</a>
           <a href={appPath("/human.html")}>Human</a>
+          <a href={appPath("/profile.html")}>Profile</a>
         </nav>
       </header>
 

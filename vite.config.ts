@@ -3,6 +3,7 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   base: "/grit3/",
+  envPrefix: ["VITE_", "NEXT_PUBLIC_"],
   plugins: [react()],
   build: {
     rollupOptions: {
@@ -11,6 +12,8 @@ export default defineConfig({
         evaluator: "evaluator.html",
         creator: "creator.html",
         human: "human.html",
+        profile: "profile.html",
+        admin: "admin.html",
         studio: "studio.html",
         results: "results.html"
       }

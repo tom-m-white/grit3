@@ -56,6 +56,9 @@ export function ResultsApp() {
           <a className="button secondary" href={appPath("/human.html")}>
             Human Benchmark
           </a>
+          <a className="button secondary" href={appPath("/profile.html")}>
+            Profile
+          </a>
         </div>
       </header>
 

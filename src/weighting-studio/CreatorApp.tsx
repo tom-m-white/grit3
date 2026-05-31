@@ -1,4 +1,6 @@
 import { type CSSProperties, type PointerEvent, useEffect, useMemo, useRef, useState } from "react";
+import { AccountControls, AuthGate, type AppAccount } from "./account";
+import { saveCreatedQuestion } from "./createdQuestionsStore";
 import { ARC_COLOR_MAP } from "./GridPanel";
 import {
   MAX_GRID_SIZE,
@@ -43,9 +45,19 @@ interface CreatorDraft {
 }
 
 export function CreatorApp() {
+  return (
+    <AuthGate title="Sign in to create questions">
+      {(account, controls) => <CreatorWorkspace account={account} onSignOut={controls.signOut} />}
+    </AuthGate>
+  );
+}
+
+function CreatorWorkspace({ account, onSignOut }: { account: AppAccount; onSignOut: () => Promise<void> }) {
   const [draft, setDraft] = useState<CreatorDraft>(() => readStoredDraft());
   const [past, setPast] = useState<CreatorDraft[]>([]);
   const [future, setFuture] = useState<CreatorDraft[]>([]);
+  const [questionTitle, setQuestionTitle] = useState("Untitled question");
+  const [savedQuestionId, setSavedQuestionId] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState(1);
   const [tool, setTool] = useState<EditorTool>("paint");
   const [selection, setSelection] = useState<GridSelection | null>(null);
@@ -325,6 +337,29 @@ export function CreatorApp() {
     setStatus("Downloaded task JSON.");
   }
 
+  async function saveQuestion(reviewStatus: "draft" | "submitted") {
+    if (validationErrors.length > 0) {
+      setStatus("Fix validation errors before saving this question.");
+      return;
+    }
+
+    setStatus(reviewStatus === "submitted" ? "Submitting question for review..." : "Saving question...");
+    try {
+      const saved = await saveCreatedQuestion({
+        id: savedQuestionId,
+        ownerId: account.user.id,
+        title: questionTitle,
+        task,
+        reviewStatus
+      });
+      setSavedQuestionId(saved.id);
+      setQuestionTitle(saved.title);
+      setStatus(reviewStatus === "submitted" ? "Question submitted for review." : "Question saved to your profile.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Question could not be saved.");
+    }
+  }
+
   function sendToEvaluator() {
     if (validationErrors.length > 0) {
       setStatus("Fix validation errors before opening in evaluator.");
@@ -357,6 +392,7 @@ export function CreatorApp() {
           <a className="button secondary" href={appPath("/human.html")}>
             Human Benchmark
           </a>
+          <AccountControls account={account} onSignOut={onSignOut} />
         </div>
       </header>
 
@@ -556,6 +592,10 @@ export function CreatorApp() {
                   <p className="eyebrow">Export</p>
                   <h2>Task JSON</h2>
                 </div>
+                <label className="compact-field creator-title-field">
+                  <span>Question title</span>
+                  <input value={questionTitle} onChange={(event) => setQuestionTitle(event.target.value)} />
+                </label>
                 {validationErrors.length > 0 ? (
                   <div className="warning-line validation-line">
                     {validationErrors.slice(0, 3).join(" ")}
@@ -566,6 +606,12 @@ export function CreatorApp() {
                 )}
               </div>
               <div className="nav-actions creator-export-actions">
+                <button className="button secondary" type="button" onClick={() => void saveQuestion("draft")}>
+                  Save Draft
+                </button>
+                <button className="button secondary" type="button" onClick={() => void saveQuestion("submitted")} disabled={validationErrors.length > 0}>
+                  Submit For Review
+                </button>
                 <button className="button secondary" type="button" onClick={downloadJson}>
                   Download
                 </button>

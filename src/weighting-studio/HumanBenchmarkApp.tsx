@@ -1,16 +1,22 @@
 import bundledProfile from "../../grit3-weighting-profile.json";
 import { type CSSProperties, type PointerEvent, useEffect, useMemo, useRef, useState } from "react";
+import { AccountControls, AuthGate, type AppAccount } from "./account";
+import {
+  type BenchmarkQuestionRecordRow,
+  type BenchmarkRunBundle,
+  createBenchmarkRun,
+  finishBenchmarkQuestion,
+  loadLatestOpenRun,
+  loadRunSubmissions,
+  recordBenchmarkSubmission,
+  saveBenchmarkDraft,
+  startOrResumeBenchmarkQuestion
+} from "./benchmarkStore";
 import { ARC_COLOR_MAP, GridPanel } from "./GridPanel";
 import {
-  HUMAN_BENCHMARK_STORAGE_KEY,
-  advanceHumanBenchmark,
-  createHumanBenchmarkSession,
-  currentHumanQuestionId,
-  recordHumanSubmission,
   serializeHumanBenchmarkCsv,
   serializeHumanBenchmarkJson,
-  summarizeHumanSession,
-  type HumanBenchmarkSession
+  summarizeHumanSession
 } from "./humanBenchmarkSession";
 import {
   clearGridSelection,
@@ -44,15 +50,22 @@ const COLORS = Object.keys(ARC_COLOR_MAP).map(Number);
 const HISTORY_LIMIT = 80;
 
 type HumanTool = "paint" | "fill" | "select";
-
-interface HumanBenchmarkSaveState {
-  session: HumanBenchmarkSession;
-  drafts: Record<QuestionId, ArcGrid[]>;
-}
+type BenchmarkMode = "intro" | "question" | "complete";
 
 export function HumanBenchmarkApp() {
-  const [saveState, setSaveState] = useState<HumanBenchmarkSaveState | null>(() => readStoredState());
-  const [participantLabel, setParticipantLabel] = useState(saveState?.session.participant_label ?? "");
+  return (
+    <AuthGate title="Sign in to benchmark">
+      {(account, controls) => <HumanBenchmarkWorkspace account={account} onSignOut={controls.signOut} />}
+    </AuthGate>
+  );
+}
+
+function HumanBenchmarkWorkspace({ account, onSignOut }: { account: AppAccount; onSignOut: () => Promise<void> }) {
+  const [run, setRun] = useState<BenchmarkRunBundle["run"] | null>(null);
+  const [records, setRecords] = useState<BenchmarkQuestionRecordRow[]>([]);
+  const [mode, setMode] = useState<BenchmarkMode>("intro");
+  const [loading, setLoading] = useState(true);
+  const [drafts, setDrafts] = useState<ArcGrid[]>([]);
   const [selectedColor, setSelectedColor] = useState(1);
   const [tool, setTool] = useState<HumanTool>("paint");
   const [activeOutputIndex, setActiveOutputIndex] = useState(0);
@@ -60,30 +73,28 @@ export function HumanBenchmarkApp() {
   const [clipboard, setClipboard] = useState<SparseGridClipboard | null>(null);
   const [pastDrafts, setPastDrafts] = useState<ArcGrid[][]>([]);
   const [futureDrafts, setFutureDrafts] = useState<ArcGrid[][]>([]);
-  const [status, setStatus] = useState(saveState ? "Session restored." : "Ready.");
+  const [status, setStatus] = useState("Loading benchmark progress...");
   const [nowTick, setNowTick] = useState(Date.now());
   const isPointerDownRef = useRef(false);
   const lastPaintedRef = useRef<string | null>(null);
   const selectionStartRef = useRef<{ outputIndex: number; x: number; y: number } | null>(null);
   const selectionDraggedRef = useRef(false);
 
-  const session = saveState?.session ?? null;
-  const currentQuestionIdValue = session ? currentHumanQuestionId(session) : null;
+  const currentQuestionIdValue = run?.current_question_id ?? null;
   const currentQuestion = currentQuestionIdValue ? questionById(currentQuestionIdValue) : null;
-  const currentRecord = currentQuestionIdValue ? session?.questions[currentQuestionIdValue] ?? null : null;
-  const currentDrafts =
-    saveState && currentQuestionIdValue
-      ? saveState.drafts[currentQuestionIdValue] ?? createBlankOutputDrafts(currentQuestion)
-      : [];
-  const frozen = Boolean(session?.completed_at || currentRecord?.status === "correct");
-  const canSubmit = Boolean(session && currentQuestion?.task && currentRecord && !frozen);
-  const summary = useMemo(() => (session ? summarizeHumanSession(session, nowTick) : null), [session, nowTick]);
+  const currentRecord = currentQuestionIdValue
+    ? records.find((record) => record.question_id === currentQuestionIdValue) ?? null
+    : null;
+  const frozen = Boolean(currentRecord?.completed_at || currentRecord?.status === "correct");
+  const canSubmit = Boolean(run && currentQuestion?.task && currentRecord && !frozen);
+  const summary = useMemo(
+    () => (run ? summarizeHumanSession(records, run.started_at, run.completed_at, nowTick) : null),
+    [records, run, nowTick]
+  );
 
   useEffect(() => {
-    if (saveState) {
-      window.localStorage.setItem(HUMAN_BENCHMARK_STORAGE_KEY, JSON.stringify(saveState));
-    }
-  }, [saveState]);
+    void refreshOpenRun();
+  }, [account.user.id]);
 
   useEffect(() => {
     const interval = window.setInterval(() => setNowTick(Date.now()), 1000);
@@ -91,10 +102,19 @@ export function HumanBenchmarkApp() {
   }, []);
 
   useEffect(() => {
+    if (!currentRecord || !currentQuestion) {
+      setDrafts([]);
+      return;
+    }
+    setDrafts(sanitizeRecordDrafts(currentRecord, currentQuestion));
+    resetEditorState();
+  }, [currentRecord?.id, currentQuestion?.question_id]);
+
+  useEffect(() => {
     function handlePointerUp() {
       if (tool === "select" && selectionStartRef.current && !selectionDraggedRef.current && !frozen) {
         const { outputIndex, x, y } = selectionStartRef.current;
-        const grid = currentDrafts[outputIndex];
+        const grid = drafts[outputIndex];
         const color = grid?.[y]?.[x];
         if (color !== undefined) {
           const nextSelection = selectCellsByColor(grid, color);
@@ -111,63 +131,88 @@ export function HumanBenchmarkApp() {
 
     window.addEventListener("pointerup", handlePointerUp);
     return () => window.removeEventListener("pointerup", handlePointerUp);
-  }, [currentDrafts, frozen, tool]);
+  }, [drafts, frozen, tool]);
 
-  function startSession() {
-    const weightsByQuestion = Object.fromEntries(
-      QUESTION_IDS.map((questionId) => [questionId, PROFILE.questions[questionId].final_weight])
-    ) as Record<QuestionId, number>;
-    const session = createHumanBenchmarkSession({
-      questionOrder: QUESTION_IDS,
-      weightsByQuestion,
-      participantLabel
-    });
-    setSaveState({
-      session,
-      drafts: createInitialDrafts(QUESTIONS)
-    });
-    setActiveOutputIndex(0);
-    setSelection(null);
-    setClipboard(null);
-    setPastDrafts([]);
-    setFutureDrafts([]);
-    setStatus("Benchmark started.");
+  async function refreshOpenRun() {
+    setLoading(true);
+    try {
+      const bundle = await loadLatestOpenRun(account.user.id);
+      if (!bundle) {
+        setRun(null);
+        setRecords([]);
+        setMode("intro");
+        setStatus("Ready to start.");
+        return;
+      }
+      setRun(bundle.run);
+      setRecords(bundle.records);
+      setMode("intro");
+      setStatus(bundle.run.status === "paused" ? "Benchmark paused." : "Benchmark progress loaded.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Could not load benchmark progress.");
+    } finally {
+      setLoading(false);
+    }
   }
 
-  function resetSession() {
-    if (saveState && !window.confirm("Start a new human benchmark session? The local autosaved session will be replaced.")) {
+  async function startNewRun() {
+    setStatus("Starting benchmark...");
+    try {
+      const weightsByQuestion = Object.fromEntries(
+        QUESTION_IDS.map((questionId) => [questionId, PROFILE.questions[questionId].final_weight])
+      ) as Record<QuestionId, number>;
+      const created = await createBenchmarkRun(account.user.id, weightsByQuestion);
+      const activated = await startOrResumeBenchmarkQuestion(created);
+      applyBundle(activated, activated.run.status === "completed" ? "complete" : "question");
+      setStatus(activated.run.status === "completed" ? "Benchmark complete." : `${activated.run.current_question_id} ready.`);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Could not start benchmark.");
+    }
+  }
+
+  async function resumeRun() {
+    if (!run) {
+      await startNewRun();
       return;
     }
-    window.localStorage.removeItem(HUMAN_BENCHMARK_STORAGE_KEY);
-    setSaveState(null);
+
+    setStatus("Resuming benchmark...");
+    try {
+      const activated = await startOrResumeBenchmarkQuestion({ run, records });
+      applyBundle(activated, activated.run.status === "completed" ? "complete" : "question");
+      setStatus(activated.run.status === "completed" ? "Benchmark complete." : `${activated.run.current_question_id} ready.`);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Could not resume benchmark.");
+    }
+  }
+
+  function applyBundle(bundle: BenchmarkRunBundle, nextMode: BenchmarkMode) {
+    setRun(bundle.run);
+    setRecords(bundle.records);
+    setMode(nextMode);
+    resetEditorState();
+  }
+
+  function resetEditorState() {
     setActiveOutputIndex(0);
     setSelection(null);
     setClipboard(null);
     setPastDrafts([]);
     setFutureDrafts([]);
-    setStatus("Ready.");
   }
 
   function commitCurrentDraft(updater: (drafts: ArcGrid[]) => ArcGrid[], message: string, keepSelection = false) {
-    if (!currentQuestionIdValue || frozen) {
+    if (!currentRecord || frozen) {
       return;
     }
 
-    const previousDrafts = currentDrafts.map(cloneGrid);
+    const previousDrafts = drafts.map(cloneGrid);
+    const nextDrafts = updater(drafts).map(cloneGrid);
     setPastDrafts((items) => [...items, previousDrafts].slice(-HISTORY_LIMIT));
     setFutureDrafts([]);
-    setSaveState((current) => {
-      if (!current) {
-        return current;
-      }
-      const existingDrafts = current.drafts[currentQuestionIdValue] ?? createBlankOutputDrafts(currentQuestion);
-      return {
-        ...current,
-        drafts: {
-          ...current.drafts,
-          [currentQuestionIdValue]: updater(existingDrafts)
-        }
-      };
+    setDrafts(nextDrafts);
+    void saveBenchmarkDraft(currentRecord.id, nextDrafts).catch((error) => {
+      setStatus(error instanceof Error ? error.message : "Draft could not be saved.");
     });
     if (!keepSelection) {
       setSelection(null);
@@ -175,22 +220,14 @@ export function HumanBenchmarkApp() {
     setStatus(message);
   }
 
-  function replaceCurrentDrafts(drafts: ArcGrid[], message: string) {
-    if (!currentQuestionIdValue) {
+  function replaceCurrentDrafts(nextDrafts: ArcGrid[], message: string) {
+    if (!currentRecord) {
       return;
     }
-
-    setSaveState((current) => {
-      if (!current) {
-        return current;
-      }
-      return {
-        ...current,
-        drafts: {
-          ...current.drafts,
-          [currentQuestionIdValue]: drafts.map(cloneGrid)
-        }
-      };
+    const cloned = nextDrafts.map(cloneGrid);
+    setDrafts(cloned);
+    void saveBenchmarkDraft(currentRecord.id, cloned).catch((error) => {
+      setStatus(error instanceof Error ? error.message : "Draft could not be saved.");
     });
     setSelection(null);
     setStatus(message);
@@ -201,7 +238,7 @@ export function HumanBenchmarkApp() {
       return;
     }
     commitCurrentDraft(
-      (drafts) => drafts.map((grid, index) => (index === outputIndex ? updater(grid) : grid)),
+      (currentDrafts) => currentDrafts.map((grid, index) => (index === outputIndex ? updater(grid) : grid)),
       message,
       keepSelection
     );
@@ -231,7 +268,7 @@ export function HumanBenchmarkApp() {
   }
 
   function copySelectedRegion() {
-    const grid = currentDrafts[activeOutputIndex];
+    const grid = drafts[activeOutputIndex];
     const copied = grid ? copyGridSelection(grid, selection) : null;
     if (!copied) {
       setStatus("No selection to copy.");
@@ -242,7 +279,7 @@ export function HumanBenchmarkApp() {
   }
 
   function pasteAtSelection() {
-    const grid = currentDrafts[activeOutputIndex];
+    const grid = drafts[activeOutputIndex];
     if (!grid || !clipboard) {
       setStatus("No copied selection to paste.");
       return;
@@ -274,14 +311,14 @@ export function HumanBenchmarkApp() {
       setStatus("Select cells before moving.");
       return;
     }
-    const grid = currentDrafts[activeOutputIndex];
+    const grid = drafts[activeOutputIndex];
     if (!grid) {
       return;
     }
     const result = moveGridSelection(grid, selection, dx, dy);
     setSelection(result.selection);
     commitCurrentDraft(
-      (drafts) => drafts.map((draft, index) => (index === activeOutputIndex ? result.grid : draft)),
+      (currentDrafts) => currentDrafts.map((draft, index) => (index === activeOutputIndex ? result.grid : draft)),
       "Selection moved.",
       true
     );
@@ -289,14 +326,14 @@ export function HumanBenchmarkApp() {
 
   function rotateActive(direction: "clockwise" | "counterclockwise") {
     if (selection) {
-      const grid = currentDrafts[activeOutputIndex];
+      const grid = drafts[activeOutputIndex];
       if (!grid) {
         return;
       }
       const result = rotateGridSelection(grid, selection, direction);
       setSelection(result.selection);
       commitCurrentDraft(
-        (drafts) => drafts.map((draft, index) => (index === activeOutputIndex ? result.grid : draft)),
+        (currentDrafts) => currentDrafts.map((draft, index) => (index === activeOutputIndex ? result.grid : draft)),
         direction === "clockwise" ? "Selection rotated right." : "Selection rotated left.",
         true
       );
@@ -311,14 +348,14 @@ export function HumanBenchmarkApp() {
 
   function flipActive(axis: "horizontal" | "vertical") {
     if (selection) {
-      const grid = currentDrafts[activeOutputIndex];
+      const grid = drafts[activeOutputIndex];
       if (!grid) {
         return;
       }
       const result = flipGridSelection(grid, selection, axis);
       setSelection(result.selection);
       commitCurrentDraft(
-        (drafts) => drafts.map((draft, index) => (index === activeOutputIndex ? result.grid : draft)),
+        (currentDrafts) => currentDrafts.map((draft, index) => (index === activeOutputIndex ? result.grid : draft)),
         axis === "horizontal" ? "Selection flipped horizontally." : "Selection flipped vertically.",
         true
       );
@@ -337,7 +374,7 @@ export function HumanBenchmarkApp() {
     }
     const previous = pastDrafts[pastDrafts.length - 1];
     setPastDrafts((items) => items.slice(0, -1));
-    setFutureDrafts((items) => [currentDrafts.map(cloneGrid), ...items]);
+    setFutureDrafts((items) => [drafts.map(cloneGrid), ...items]);
     replaceCurrentDrafts(previous, "Undone.");
   }
 
@@ -347,7 +384,7 @@ export function HumanBenchmarkApp() {
     }
     const next = futureDrafts[0];
     setFutureDrafts((items) => items.slice(1));
-    setPastDrafts((items) => [...items, currentDrafts.map(cloneGrid)].slice(-HISTORY_LIMIT));
+    setPastDrafts((items) => [...items, drafts.map(cloneGrid)].slice(-HISTORY_LIMIT));
     replaceCurrentDrafts(next, "Redone.");
   }
 
@@ -405,62 +442,83 @@ export function HumanBenchmarkApp() {
     updateDraftGrid(outputIndex, (grid) => setGridCell(grid, x, y, selectedColor), "Painted cell.", true);
   }
 
-  function submitCurrentAnswer() {
-    if (!saveState || !currentQuestion?.task || !currentQuestionIdValue || !canSubmit) {
+  async function submitCurrentAnswer() {
+    if (!currentQuestion?.task || !currentRecord || !canSubmit) {
       return;
     }
 
-    const expectedOutputs = currentQuestion.task.test.map((pair) => pair.output).filter((grid): grid is ArcGrid => Boolean(grid));
-    const submittedOutputs = currentDrafts.map(cloneGrid);
-    const recorded = recordHumanSubmission({
-      session: saveState.session,
-      expectedOutputs,
-      submittedOutputs
-    });
-    setSaveState({
-      ...saveState,
-      session: recorded.session
-    });
-    setStatus(recorded.correct ? "Correct." : "Incorrect.");
+    setStatus("Submitting answer...");
+    try {
+      const expectedOutputs = currentQuestion.task.test.map((pair) => pair.output).filter((grid): grid is ArcGrid => Boolean(grid));
+      const updated = await recordBenchmarkSubmission({
+        record: currentRecord,
+        expectedOutputs,
+        submittedOutputs: drafts.map(cloneGrid)
+      });
+      setRecords((items) => items.map((item) => (item.id === updated.id ? updated : item)));
+      setStatus(updated.status === "correct" ? "Correct." : "Incorrect.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Answer could not be submitted.");
+    }
   }
 
-  function advanceCurrentQuestion() {
-    if (!saveState) {
+  async function advanceCurrentQuestion() {
+    if (!run || !currentRecord) {
       return;
     }
-    const nextSession = advanceHumanBenchmark({ session: saveState.session });
-    const nextQuestionId = currentHumanQuestionId(nextSession);
-    setSaveState({
-      ...saveState,
-      session: nextSession
-    });
-    setActiveOutputIndex(0);
-    setSelection(null);
-    setClipboard(null);
-    setPastDrafts([]);
-    setFutureDrafts([]);
-    setStatus(nextSession.completed_at ? "Benchmark complete." : `${nextQuestionId} ready.`);
+    setStatus("Loading next question...");
+    try {
+      const next = await finishBenchmarkQuestion({
+        bundle: { run, records },
+        record: currentRecord,
+        continueRun: true
+      });
+      applyBundle(next, next.run.status === "completed" ? "complete" : "question");
+      setStatus(next.run.status === "completed" ? "Benchmark complete." : `${next.run.current_question_id} ready.`);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Could not continue benchmark.");
+    }
   }
 
-  function exportJson() {
-    if (!session) {
+  async function endBenchmark() {
+    if (!run || !currentRecord) {
+      window.location.href = appPath("/profile.html");
       return;
     }
+    setStatus("Saving progress...");
+    try {
+      await finishBenchmarkQuestion({
+        bundle: { run, records },
+        record: currentRecord,
+        continueRun: false
+      });
+      window.location.href = appPath("/profile.html");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Could not pause benchmark.");
+    }
+  }
+
+  async function exportJson() {
+    if (!run) {
+      return;
+    }
+    const submissions = await loadRunSubmissions(run.id);
     downloadFile(
-      `grit3-human-benchmark-${session.session_id}.json`,
-      serializeHumanBenchmarkJson(session),
+      `grit3-human-benchmark-${run.id}.json`,
+      serializeHumanBenchmarkJson({ run, records, submissions }),
       "application/json"
     );
     setStatus("Exported JSON.");
   }
 
-  function exportCsv() {
-    if (!session) {
+  async function exportCsv() {
+    if (!run) {
       return;
     }
+    const submissions = await loadRunSubmissions(run.id);
     downloadFile(
-      `grit3-human-benchmark-${session.session_id}.csv`,
-      serializeHumanBenchmarkCsv(session),
+      `grit3-human-benchmark-${run.id}.csv`,
+      serializeHumanBenchmarkCsv({ run, records, submissions }),
       "text/csv;charset=utf-8"
     );
     setStatus("Exported CSV.");
@@ -489,38 +547,31 @@ export function HumanBenchmarkApp() {
           <a className="button secondary" href={appPath("/results.html")}>
             Results
           </a>
-          {session ? (
+          {run ? (
             <>
-              <button className="button secondary" type="button" onClick={exportCsv}>
+              <button className="button secondary" type="button" onClick={() => void exportCsv()}>
                 Export CSV
               </button>
-              <button className="button secondary" type="button" onClick={exportJson}>
+              <button className="button secondary" type="button" onClick={() => void exportJson()}>
                 Export JSON
-              </button>
-              <button className="button secondary" type="button" onClick={resetSession}>
-                New Session
               </button>
             </>
           ) : null}
+          <AccountControls account={account} onSignOut={onSignOut} />
         </div>
       </header>
 
-      {!session ? (
-        <StartPanel
-          participantLabel={participantLabel}
-          onParticipantLabelChange={setParticipantLabel}
-          onStart={startSession}
-        />
-      ) : session.completed_at ? (
-        <CompletePanel session={session} summary={summary} onExportJson={exportJson} onExportCsv={exportCsv} />
-      ) : currentQuestion && currentRecord && summary ? (
+      {loading ? (
+        <section className="panel human-empty-panel">
+          <div className="empty-state">Loading benchmark progress...</div>
+        </section>
+      ) : mode === "intro" ? (
+        <StartPanel run={run} records={records} summary={summary} onStart={run ? resumeRun : startNewRun} />
+      ) : mode === "complete" && run ? (
+        <CompletePanel run={run} records={records} summary={summary} onExportJson={exportJson} onExportCsv={exportCsv} onStartNew={startNewRun} />
+      ) : currentQuestion && currentRecord && run && summary ? (
         <div className="human-workspace">
-          <HumanProgressPanel
-            session={session}
-            record={currentRecord}
-            summary={summary}
-            now={nowTick}
-          />
+          <HumanProgressPanel run={run} record={currentRecord} records={records} summary={summary} now={nowTick} />
 
           <section className="human-question-grid">
             <QuestionPanel question={currentQuestion} />
@@ -530,7 +581,7 @@ export function HumanBenchmarkApp() {
               color={selectedColor}
               clipboard={clipboard}
               canRedo={futureDrafts.length > 0}
-              drafts={currentDrafts}
+              drafts={drafts}
               frozen={frozen}
               canUndo={pastDrafts.length > 0}
               onCellPointerDown={handleCellPointerDown}
@@ -539,6 +590,7 @@ export function HumanBenchmarkApp() {
               onClearSelection={clearActiveSelectionOrGrid}
               onCopySelection={copySelectedRegion}
               onCopyInput={copyTestInput}
+              onEnd={endBenchmark}
               onFlip={flipActive}
               onMove={moveSelection}
               onPasteSelection={pasteAtSelection}
@@ -573,21 +625,24 @@ export function HumanBenchmarkApp() {
 }
 
 function StartPanel({
-  participantLabel,
-  onParticipantLabelChange,
+  run,
+  records,
+  summary,
   onStart
 }: {
-  participantLabel: string;
-  onParticipantLabelChange: (value: string) => void;
+  run: BenchmarkRunBundle["run"] | null;
+  records: BenchmarkQuestionRecordRow[];
+  summary: ReturnType<typeof summarizeHumanSession> | null;
   onStart: () => void;
 }) {
+  const hasProgress = records.some((record) => record.completed_at);
   return (
     <section className="human-start">
       <div className="panel human-start-panel">
         <div className="panel-header">
           <div>
-            <p className="eyebrow">Session</p>
-            <h2>Start benchmark</h2>
+            <p className="eyebrow">Directions</p>
+            <h2>{run ? "Resume benchmark" : "Start benchmark"}</h2>
           </div>
           <span className="panel-meta">q3-q27</span>
         </div>
@@ -595,20 +650,21 @@ function StartPanel({
         <div className="human-start-body">
           <div className="summary-metrics human-start-metrics">
             <Metric label="Questions" value={String(QUESTION_IDS.length)} />
-            <Metric label="Order" value="Fixed" />
-            <Metric label="Storage" value="Local" />
+            <Metric label="Order" value="Random unseen" />
+            <Metric label="Storage" value="Supabase" />
+            <Metric label="Completed" value={summary ? `${summary.completedQuestions}/${summary.totalQuestions}` : "0/25"} />
           </div>
-          <label className="field human-label-field">
-            <span>Participant label</span>
-            <input
-              value={participantLabel}
-              onChange={(event) => onParticipantLabelChange(event.target.value)}
-              placeholder="Optional"
-            />
-          </label>
+          <div className="human-directions">
+            <p>You will receive one random benchmark question that you have not completed in this run.</p>
+            <p>If you leave before finishing a question, your draft is saved and that question resumes next time.</p>
+            <p>After submitting, you can try again, move on to another random unseen question, or end and continue later.</p>
+          </div>
           <div className="human-start-actions">
+            <a className="button secondary" href={appPath("/profile.html")}>
+              View Profile
+            </a>
             <button className="button primary" type="button" onClick={onStart}>
-              Start Benchmark
+              {run || hasProgress ? "Resume Benchmark" : "Start Benchmark"}
             </button>
           </div>
         </div>
@@ -618,35 +674,37 @@ function StartPanel({
 }
 
 function HumanProgressPanel({
-  session,
+  run,
   record,
+  records,
   summary,
   now
 }: {
-  session: HumanBenchmarkSession;
-  record: HumanBenchmarkSession["questions"][QuestionId];
+  run: BenchmarkRunBundle["run"];
+  record: BenchmarkQuestionRecordRow;
+  records: BenchmarkQuestionRecordRow[];
   summary: ReturnType<typeof summarizeHumanSession>;
   now: number;
 }) {
   const questionStartedAt = record.started_at ? Date.parse(record.started_at) : now;
   const questionElapsed = record.elapsed_ms ?? Math.max(0, now - questionStartedAt);
+  const remaining = records.filter((item) => item.completed_at === null && item.id !== record.id).length;
 
   return (
     <section className="panel human-progress-panel">
       <div className="panel-header">
         <div>
           <p className="eyebrow">Progress</p>
-          <h2>
-            Question {session.current_question_index + 1} of {session.question_order.length}
-          </h2>
+          <h2>{record.question_id}</h2>
         </div>
         <span className="human-weight-pill">Weight {record.weight}</span>
       </div>
       <div className="summary-metrics human-run-metrics">
-        <Metric label="Total time" value={formatDuration(summary.totalElapsedMs)} />
+        <Metric label="Run status" value={run.status} />
         <Metric label="Question time" value={formatDuration(questionElapsed)} />
         <Metric label="Submissions" value={String(record.submission_count)} />
         <Metric label="Completed" value={`${summary.completedQuestions}/${summary.totalQuestions}`} />
+        <Metric label="Remaining" value={String(remaining)} />
       </div>
     </section>
   );
@@ -705,6 +763,7 @@ function AnswerPanel({
   onClearSelection,
   onCopySelection,
   onCopyInput,
+  onEnd,
   onFlip,
   onMove,
   onPasteSelection,
@@ -737,6 +796,7 @@ function AnswerPanel({
   onClearSelection: () => void;
   onCopySelection: () => void;
   onCopyInput: (outputIndex: number) => void;
+  onEnd: () => void;
   onFlip: (axis: "horizontal" | "vertical") => void;
   onMove: (dx: number, dy: number) => void;
   onPasteSelection: () => void;
@@ -750,7 +810,7 @@ function AnswerPanel({
   onAdvance: () => void;
   onTryAgain: () => void;
   onUndo: () => void;
-  record: HumanBenchmarkSession["questions"][QuestionId];
+  record: BenchmarkQuestionRecordRow;
   selection: AdvancedGridSelection | null;
   status: string;
   tool: HumanTool;
@@ -792,28 +852,13 @@ function AnswerPanel({
         </div>
 
         <div className="tool-group" aria-label="Tools">
-          <button
-            className={tool === "paint" ? "tool-button selected" : "tool-button"}
-            type="button"
-            onClick={() => onSelectTool("paint")}
-            disabled={frozen}
-          >
+          <button className={tool === "paint" ? "tool-button selected" : "tool-button"} type="button" onClick={() => onSelectTool("paint")} disabled={frozen}>
             Paint
           </button>
-          <button
-            className={tool === "fill" ? "tool-button selected" : "tool-button"}
-            type="button"
-            onClick={() => onSelectTool("fill")}
-            disabled={frozen}
-          >
+          <button className={tool === "fill" ? "tool-button selected" : "tool-button"} type="button" onClick={() => onSelectTool("fill")} disabled={frozen}>
             Fill
           </button>
-          <button
-            className={tool === "select" ? "tool-button selected" : "tool-button"}
-            type="button"
-            onClick={() => onSelectTool("select")}
-            disabled={frozen}
-          >
+          <button className={tool === "select" ? "tool-button selected" : "tool-button"} type="button" onClick={() => onSelectTool("select")} disabled={frozen}>
             Select
           </button>
         </div>
@@ -919,6 +964,9 @@ function AnswerPanel({
           </button>
           <button className="button secondary" type="button" onClick={onAdvance} disabled={!canAdvance}>
             {correct ? "Continue" : "Move On"}
+          </button>
+          <button className="button secondary" type="button" onClick={onEnd} disabled={!canAdvance}>
+            End Benchmark
           </button>
         </div>
       </div>
@@ -1029,17 +1077,21 @@ function isSelectedCell(selection: ReturnType<typeof normalizeGridSelection>, x:
 }
 
 function CompletePanel({
-  session,
+  run,
+  records,
   summary,
   onExportJson,
-  onExportCsv
+  onExportCsv,
+  onStartNew
 }: {
-  session: HumanBenchmarkSession;
+  run: BenchmarkRunBundle["run"];
+  records: BenchmarkQuestionRecordRow[];
   summary: ReturnType<typeof summarizeHumanSession> | null;
   onExportJson: () => void;
   onExportCsv: () => void;
+  onStartNew: () => void;
 }) {
-  const safeSummary = summary ?? summarizeHumanSession(session);
+  const safeSummary = summary ?? summarizeHumanSession(records, run.started_at, run.completed_at);
 
   return (
     <section className="human-complete">
@@ -1047,9 +1099,9 @@ function CompletePanel({
         <div className="panel-header">
           <div>
             <p className="eyebrow">Complete</p>
-            <h2>Benchmark session</h2>
+            <h2>Benchmark run</h2>
           </div>
-          <span className="panel-meta">{session.session_id}</span>
+          <span className="panel-meta">{run.id}</span>
         </div>
         <div className="summary-metrics human-complete-metrics">
           <Metric label="Total time" value={formatDuration(safeSummary.totalElapsedMs)} />
@@ -1061,8 +1113,11 @@ function CompletePanel({
           <button className="button secondary" type="button" onClick={onExportCsv}>
             Export CSV
           </button>
-          <button className="button primary" type="button" onClick={onExportJson}>
+          <button className="button secondary" type="button" onClick={onExportJson}>
             Export JSON
+          </button>
+          <button className="button primary" type="button" onClick={onStartNew}>
+            New Run
           </button>
         </div>
         <div className="summary-table-wrap">
@@ -1077,18 +1132,15 @@ function CompletePanel({
               </tr>
             </thead>
             <tbody>
-              {session.question_order.map((questionId) => {
-                const record = session.questions[questionId];
-                return (
-                  <tr key={questionId}>
-                    <td>{questionId}</td>
-                    <td>{record.weight}</td>
-                    <td>{record.final_correct ? "correct" : "wrong"}</td>
-                    <td>{record.submission_count}</td>
-                    <td>{formatDuration(record.elapsed_ms ?? 0)}</td>
-                  </tr>
-                );
-              })}
+              {records.map((record) => (
+                <tr key={record.id}>
+                  <td>{record.question_id}</td>
+                  <td>{record.weight}</td>
+                  <td>{record.final_correct === true ? "correct" : record.final_correct === false ? "wrong" : record.status}</td>
+                  <td>{record.submission_count}</td>
+                  <td>{formatDuration(record.elapsed_ms ?? 0)}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -1106,7 +1158,7 @@ function Metric({ label, value }: { label: string; value: string }) {
   );
 }
 
-function statusForRecord(record: HumanBenchmarkSession["questions"][QuestionId], fallback: string): string {
+function statusForRecord(record: BenchmarkQuestionRecordRow, fallback: string): string {
   if (record.status === "correct") {
     return "Correct.";
   }
@@ -1120,10 +1172,14 @@ function questionById(questionId: QuestionId): LoadedQuestion | null {
   return QUESTIONS.find((question) => question.question_id === questionId) ?? null;
 }
 
-function createInitialDrafts(questions: LoadedQuestion[]): Record<QuestionId, ArcGrid[]> {
-  return Object.fromEntries(
-    QUESTION_IDS.map((questionId) => [questionId, createBlankOutputDrafts(questions.find((question) => question.question_id === questionId) ?? null)])
-  ) as Record<QuestionId, ArcGrid[]>;
+function sanitizeRecordDrafts(record: BenchmarkQuestionRecordRow, question: LoadedQuestion | null): ArcGrid[] {
+  const fallback = createBlankOutputDrafts(question);
+  const candidate = record.draft_outputs;
+  if (!Array.isArray(candidate)) {
+    return fallback;
+  }
+  const validDrafts = candidate.filter((grid): grid is ArcGrid => validateGrid(grid, "draft").length === 0).map(cloneGrid);
+  return validDrafts.length === fallback.length ? validDrafts : fallback;
 }
 
 function createBlankOutputDrafts(question: LoadedQuestion | null): ArcGrid[] {
@@ -1131,57 +1187,6 @@ function createBlankOutputDrafts(question: LoadedQuestion | null): ArcGrid[] {
     return [createGrid(1, 1, 0)];
   }
   return question.task.test.map((pair) => createGrid(pair.input[0]?.length ?? 1, pair.input.length, 0));
-}
-
-function readStoredState(): HumanBenchmarkSaveState | null {
-  const raw = window.localStorage.getItem(HUMAN_BENCHMARK_STORAGE_KEY);
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as Partial<HumanBenchmarkSaveState>;
-    if (!isCompatibleSession(parsed.session) || !parsed.drafts || typeof parsed.drafts !== "object") {
-      return null;
-    }
-    const drafts = sanitizeDrafts(parsed.drafts as Partial<Record<QuestionId, ArcGrid[]>>);
-    return {
-      session: parsed.session,
-      drafts
-    };
-  } catch {
-    return null;
-  }
-}
-
-function isCompatibleSession(input: unknown): input is HumanBenchmarkSession {
-  if (!input || typeof input !== "object" || Array.isArray(input)) {
-    return false;
-  }
-  const session = input as Partial<HumanBenchmarkSession>;
-  return (
-    session.benchmark === "grit3-human" &&
-    session.version === 1 &&
-    typeof session.session_id === "string" &&
-    Array.isArray(session.question_order) &&
-    QUESTION_IDS.every((questionId, index) => session.question_order?.[index] === questionId) &&
-    typeof session.current_question_index === "number" &&
-    Boolean(session.questions)
-  );
-}
-
-function sanitizeDrafts(input: Partial<Record<QuestionId, ArcGrid[]>>): Record<QuestionId, ArcGrid[]> {
-  return Object.fromEntries(
-    QUESTION_IDS.map((questionId) => {
-      const fallback = createBlankOutputDrafts(questionById(questionId));
-      const candidate = input[questionId];
-      if (!Array.isArray(candidate)) {
-        return [questionId, fallback];
-      }
-      const validDrafts = candidate.filter((grid): grid is ArcGrid => validateGrid(grid, "draft").length === 0).map(cloneGrid);
-      return [questionId, validDrafts.length === fallback.length ? validDrafts : fallback];
-    })
-  ) as Record<QuestionId, ArcGrid[]>;
 }
 
 function cloneGrid(grid: ArcGrid): ArcGrid {

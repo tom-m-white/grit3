@@ -1,6 +1,8 @@
 node_modules/
 dist/
 *.tsbuildinfo
+.vite-*.log
+.vite-*.err
 .env
 .env.*
 !.env.example

@@ -11,7 +11,9 @@ The app is built with Vite and React, deploys as static files, and is configured
 - **Creator Studio** (`/creator.html`) - build ARC-style `train` and `test` grids, export task JSON, or send a draft directly to the evaluator.
 - **Weighting Studio** (`/studio.html`) - manually rate q3-q27 with a structural rubric and export the weighting profile.
 - **Results Viewer** (`/results.html`) - compare model runs with weighted scores, coverage, heatmaps, validation checks, timing, cost, and token totals.
-- **Human Benchmark** (`/human.html`) - run local human benchmark sessions, record timing/submissions, and export session data.
+- **Human Benchmark** (`/human.html`) - run account-backed human benchmark sessions one random unseen question at a time.
+- **Profile** (`/profile.html`) - view benchmark progress, run history, and saved creator questions.
+- **Admin Review** (`/admin.html`) - role-gated review queue for user-created questions.
 
 ## Local Development
 
@@ -29,6 +31,8 @@ Open `http://localhost:5173/grit3/` when using the current GitHub Pages-style ba
 - `http://localhost:5173/grit3/studio.html`
 - `http://localhost:5173/grit3/results.html`
 - `http://localhost:5173/grit3/human.html`
+- `http://localhost:5173/grit3/profile.html`
+- `http://localhost:5173/grit3/admin.html`
 
 Run the checks before publishing:
 
@@ -76,9 +80,10 @@ Browser data is stored locally:
 - Weighting profiles: `grit3.weightingStudio.profile.v1`
 - Creator drafts: `grit3.creator.draft.v1`
 - Creator-to-evaluator handoff: `grit3.creator.evaluatorTask.v1`
-- Human benchmark sessions: `grit3.humanBenchmark.session.v1`
 
-The benchmark question JSON files are loaded read-only. The tools do not overwrite question data or benchmark assets.
+Account-backed data is stored in Supabase. Copy `.env.example` to `.env.local`, set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`, then run `supabase/schema.sql` in your Supabase project. Supabase's `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` names are also supported for compatibility with their setup guide.
+
+The benchmark question JSON files are loaded read-only. The tools do not overwrite question data or benchmark assets. User-created questions are stored for review and are not included in the benchmark pool until a future inclusion workflow is added.
 
 ## Results And Validation
 

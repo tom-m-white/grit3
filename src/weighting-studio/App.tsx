@@ -164,6 +164,9 @@ export function App() {
           <a className="button secondary" href={appPath("/human.html")}>
             Human Benchmark
           </a>
+          <a className="button secondary" href={appPath("/profile.html")}>
+            Profile
+          </a>
           <button className="button secondary" type="button" onClick={() => importInputRef.current?.click()}>
             Import JSON
           </button>

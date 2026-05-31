@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
-  advanceHumanBenchmark,
-  createHumanBenchmarkSession,
-  recordHumanSubmission,
+  createInitialQuestionProgress,
+  findOpenQuestion,
+  selectNextHumanQuestionId,
   serializeHumanBenchmarkCsv,
   serializeHumanBenchmarkJson,
   summarizeHumanSession
@@ -12,131 +12,146 @@ import type { QuestionId } from "./types";
 const q3 = "q3" as QuestionId;
 const q4 = "q4" as QuestionId;
 const q5 = "q5" as QuestionId;
-const startedAt = Date.UTC(2026, 4, 30, 12, 0, 0);
+const startedAt = "2026-05-30T12:00:00.000Z";
 
-function createFixtureSession(now = startedAt) {
-  return createHumanBenchmarkSession({
-    questionOrder: [q3, q4, q5],
-    weightsByQuestion: { q3: 1, q4: 3, q5: 5 } as Record<QuestionId, number>,
-    participantLabel: "tester",
-    sessionId: "session-a",
-    now
-  });
+function fixtureRecords() {
+  return createInitialQuestionProgress([q3, q4, q5], { q3: 1, q4: 3, q5: 5 } as Record<QuestionId, number>);
 }
 
 describe("human benchmark session", () => {
-  it("initializes a fixed locked q3-q27-style order and starts only the first question", () => {
-    const session = createFixtureSession();
+  it("initializes every bundled question as not started for random one-at-a-time selection", () => {
+    const records = fixtureRecords();
 
-    expect(session.session_id).toBe("session-a");
-    expect(session.participant_label).toBe("tester");
-    expect(session.question_order).toEqual([q3, q4, q5]);
-    expect(session.current_question_index).toBe(0);
-    expect(session.questions.q3.status).toBe("in_progress");
-    expect(session.questions.q4.status).toBe("not_started");
-    expect(session.questions.q3.weight).toBe(1);
+    expect(records.map((record) => record.question_id)).toEqual([q3, q4, q5]);
+    expect(records.every((record) => record.status === "not_started")).toBe(true);
+    expect(records[1].weight).toBe(3);
   });
 
-  it("records wrong submissions and advances without allowing unanswered questions through", () => {
-    let session = createFixtureSession();
-    const blocked = advanceHumanBenchmark({ session, now: startedAt + 500 });
-    expect(blocked.current_question_index).toBe(0);
+  it("selects a deterministic random unseen question when there is no open question", () => {
+    const records = fixtureRecords();
 
-    const recorded = recordHumanSubmission({
-      session,
-      expectedOutputs: [[[1]]],
-      submittedOutputs: [[[0]]],
-      now: startedAt + 1000
-    });
-    session = advanceHumanBenchmark({ session: recorded.session, now: startedAt + 2000 });
-
-    expect(recorded.correct).toBe(false);
-    expect(session.questions.q3.final_correct).toBe(false);
-    expect(session.questions.q3.first_submission_correct).toBe(false);
-    expect(session.questions.q3.submission_count).toBe(1);
-    expect(session.questions.q3.elapsed_ms).toBe(2000);
-    expect(session.current_question_index).toBe(1);
-    expect(session.questions.q4.status).toBe("in_progress");
+    expect(selectNextHumanQuestionId(records, () => 0)).toBe(q3);
+    expect(selectNextHumanQuestionId(records, () => 0.5)).toBe(q4);
+    expect(selectNextHumanQuestionId(records, () => 0.999)).toBe(q5);
   });
 
-  it("distinguishes correct-after-wrong from first-attempt correctness", () => {
-    let session = createFixtureSession();
-    session = recordHumanSubmission({
-      session,
-      expectedOutputs: [[[1]]],
-      submittedOutputs: [[[0]]],
-      now: startedAt + 1000
-    }).session;
-    session = recordHumanSubmission({
-      session,
-      expectedOutputs: [[[1]]],
-      submittedOutputs: [[[1]]],
-      now: startedAt + 3000
-    }).session;
-    session = advanceHumanBenchmark({ session, now: startedAt + 4000 });
+  it("resumes an open question before picking a new random question", () => {
+    const records = fixtureRecords().map((record) =>
+      record.question_id === q4
+        ? {
+            ...record,
+            status: "wrong" as const,
+            started_at: "2026-05-30T12:02:00.000Z",
+            submission_count: 1
+          }
+        : record
+    );
 
-    expect(session.questions.q3.final_correct).toBe(true);
-    expect(session.questions.q3.first_submission_correct).toBe(false);
-    expect(session.questions.q3.status).toBe("correct");
-    expect(session.questions.q3.submission_count).toBe(2);
-    expect(session.total_submission_count).toBe(2);
+    expect(findOpenQuestion(records)?.question_id).toBe(q4);
+    expect(selectNextHumanQuestionId(records, () => 0)).toBe(q4);
   });
 
-  it("captures question-relative and per-submission timing with an injected clock", () => {
-    let session = createFixtureSession(startedAt + 1000);
-    session = recordHumanSubmission({
-      session,
-      expectedOutputs: [[[9]]],
-      submittedOutputs: [[[1]]],
-      now: startedAt + 2500
-    }).session;
-    session = recordHumanSubmission({
-      session,
-      expectedOutputs: [[[9]]],
-      submittedOutputs: [[[2]]],
-      now: startedAt + 4500
-    }).session;
-    session = advanceHumanBenchmark({ session, now: startedAt + 6000 });
+  it("excludes completed questions from the random pool", () => {
+    const records = fixtureRecords().map((record) =>
+      record.question_id === q3 || record.question_id === q4
+        ? {
+            ...record,
+            status: "correct" as const,
+            final_correct: true,
+            first_submission_correct: true,
+            submission_count: 1,
+            started_at: startedAt,
+            completed_at: "2026-05-30T12:03:00.000Z",
+            elapsed_ms: 180000
+          }
+        : record
+    );
 
-    expect(session.questions.q3.submissions[0].question_elapsed_ms).toBe(1500);
-    expect(session.questions.q3.submissions[0].time_since_previous_submission_ms).toBe(1500);
-    expect(session.questions.q3.submissions[1].question_elapsed_ms).toBe(3500);
-    expect(session.questions.q3.submissions[1].time_since_previous_submission_ms).toBe(2000);
-    expect(session.questions.q3.elapsed_ms).toBe(5000);
+    expect(selectNextHumanQuestionId(records, () => 0)).toBe(q5);
   });
 
-  it("grades multi-output submissions exactly", () => {
-    const recorded = recordHumanSubmission({
-      session: createFixtureSession(),
-      expectedOutputs: [[[1]], [[2, 2]]],
-      submittedOutputs: [[[1]], [[2, 2]]],
-      now: startedAt + 1000
+  it("summarizes completed-only progress and weighted score", () => {
+    const records = fixtureRecords().map((record) => {
+      if (record.question_id === q3) {
+        return {
+          ...record,
+          status: "correct" as const,
+          final_correct: true,
+          first_submission_correct: false,
+          submission_count: 2,
+          started_at: startedAt,
+          completed_at: "2026-05-30T12:03:00.000Z",
+          elapsed_ms: 180000
+        };
+      }
+      if (record.question_id === q4) {
+        return {
+          ...record,
+          status: "wrong" as const,
+          final_correct: false,
+          first_submission_correct: false,
+          submission_count: 1,
+          started_at: startedAt,
+          completed_at: "2026-05-30T12:05:00.000Z",
+          elapsed_ms: 300000
+        };
+      }
+      return record;
     });
 
-    expect(recorded.correct).toBe(true);
-    expect(recorded.session.questions.q3.final_correct).toBe(true);
+    const summary = summarizeHumanSession(records, startedAt, null, Date.parse("2026-05-30T12:07:00.000Z"));
+
+    expect(summary.completedQuestions).toBe(2);
+    expect(summary.correctQuestions).toBe(1);
+    expect(summary.wrongQuestions).toBe(1);
+    expect(summary.correctWeight).toBe(1);
+    expect(summary.completedWeight).toBe(4);
+    expect(summary.totalWeight).toBe(9);
+    expect(summary.totalSubmissions).toBe(3);
+    expect(summary.totalElapsedMs).toBe(420000);
   });
 
   it("serializes backend-ready JSON and attempt-level CSV rows", () => {
-    let session = createFixtureSession();
-    session = recordHumanSubmission({
-      session,
-      expectedOutputs: [[[1]]],
-      submittedOutputs: [[[1]]],
-      now: startedAt + 1000
-    }).session;
-    session = advanceHumanBenchmark({ session, now: startedAt + 2000 });
+    const records = fixtureRecords().map((record) =>
+      record.question_id === q3
+        ? {
+            ...record,
+            status: "correct" as const,
+            final_correct: true,
+            first_submission_correct: true,
+            submission_count: 1,
+            started_at: startedAt,
+            completed_at: "2026-05-30T12:01:00.000Z",
+            elapsed_ms: 60000
+          }
+        : record
+    );
 
-    const parsed = JSON.parse(serializeHumanBenchmarkJson(session));
-    const csv = serializeHumanBenchmarkCsv(session);
-    const summary = summarizeHumanSession(session, startedAt + 2000);
+    const run = {
+      id: "run-a",
+      user_id: "user-a",
+      started_at: startedAt,
+      completed_at: null,
+      status: "paused" as const
+    };
+    const submissions = [
+      {
+        question_id: q3,
+        submission_index: 1,
+        submitted_at: "2026-05-30T12:01:00.000Z",
+        question_elapsed_ms: 60000,
+        time_since_previous_submission_ms: 60000,
+        outputs: [[[1]]],
+        correct: true
+      }
+    ];
 
-    expect(parsed.questions.q3.submissions[0].outputs).toEqual([[[1]]]);
-    expect(csv).toContain("session_id,participant_label");
-    expect(csv).toContain("session-a,tester");
+    const parsed = JSON.parse(serializeHumanBenchmarkJson({ run, records, submissions }));
+    const csv = serializeHumanBenchmarkCsv({ run, records, submissions });
+
+    expect(parsed.run.id).toBe("run-a");
+    expect(csv).toContain("run_id,user_id");
+    expect(csv).toContain("run-a,user-a");
     expect(csv).toContain("true,[[[1]]]");
-    expect(summary.correctQuestions).toBe(1);
-    expect(summary.correctWeight).toBe(1);
-    expect(summary.totalSubmissions).toBe(1);
   });
 });
