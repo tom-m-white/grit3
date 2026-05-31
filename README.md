@@ -49,7 +49,7 @@ npm.cmd run build
 The project is configured for GitHub Pages at:
 
 ```text
-https://<username>.github.io/grit3/
+https://tom-m-white.github.io/grit3/
 ```
 
 Important deployment pieces:
@@ -144,4 +144,4 @@ Each question has seven rubric ratings from 1 to 5:
 - `>3.00-4.00` -> weight `3`
 - `>4.00-5.00` -> weight `4`
 
-`final_weight` is the manual override when set; otherwise it is the suggested bucket.
+`final_weight` is the manual override when set; otherwise, it is the suggested bucket.
