@@ -11,6 +11,7 @@ export default defineConfig({
         home: "index.html",
         evaluator: "evaluator.html",
         creator: "creator.html",
+        challenge: "challenge.html",
         human: "human.html",
         profile: "profile.html",
         admin: "admin.html",

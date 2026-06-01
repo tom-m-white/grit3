@@ -3,7 +3,8 @@ import {
   canSearchProfiles,
   mapPublicProfileRows,
   normalizeProfileSearchQuery,
-  profileStoreErrorMessage
+  profileStoreErrorMessage,
+  publicProfilePath
 } from "./publicProfileStore";
 
 describe("profile search helpers", () => {
@@ -16,6 +17,10 @@ describe("profile search helpers", () => {
     expect(canSearchProfiles("a")).toBe(false);
     expect(canSearchProfiles("@a")).toBe(false);
     expect(canSearchProfiles("@al")).toBe(true);
+  });
+
+  it("builds public profile paths with encoded usernames", () => {
+    expect(publicProfilePath("A User")).toContain("/profile.html?u=A%20User");
   });
 
   it("reads Supabase error messages from plain response objects", () => {

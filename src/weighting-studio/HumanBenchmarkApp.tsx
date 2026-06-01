@@ -14,6 +14,7 @@ import {
   startOrResumeBenchmarkQuestion
 } from "./benchmarkStore";
 import { ARC_COLOR_MAP, GridPanel } from "./GridPanel";
+import { SolveAnswerPanel, SolveQuestionPanel, type HumanTool } from "./HumanSolvePanels";
 import {
   serializeHumanBenchmarkCsv,
   serializeHumanBenchmarkJson,
@@ -51,7 +52,6 @@ const PROFILE = validateImportedProfile(bundledProfile);
 const COLORS = Object.keys(ARC_COLOR_MAP).map(Number);
 const HISTORY_LIMIT = 80;
 
-type HumanTool = "paint" | "fill" | "select";
 type BenchmarkMode = "intro" | "question" | "complete";
 
 export function HumanBenchmarkApp() {
@@ -575,9 +575,15 @@ function HumanBenchmarkWorkspace({ account, onSignOut }: { account: AppAccount; 
           <HumanProgressPanel run={run} record={currentRecord} records={records} summary={summary} now={nowTick} />
 
           <section className="human-question-grid">
-            <QuestionPanel question={currentQuestion} />
-            <AnswerPanel
+            <SolveQuestionPanel
+              loadError={currentQuestion.load_error}
+              task={currentQuestion.task}
+              title={currentQuestion.question_id}
+            />
+            <SolveAnswerPanel
               activeOutputIndex={activeOutputIndex}
+              advanceLabel={currentRecord.status === "correct" ? "Continue" : "Move On"}
+              canAdvance={currentRecord.status === "correct" || currentRecord.status === "wrong"}
               canSubmit={canSubmit}
               color={selectedColor}
               clipboard={clipboard}
@@ -606,7 +612,9 @@ function HumanBenchmarkWorkspace({ account, onSignOut }: { account: AppAccount; 
               onAdvance={advanceCurrentQuestion}
               onTryAgain={() => setStatus("Ready for another attempt.")}
               onUndo={undo}
-              record={currentRecord}
+              outcome={
+                currentRecord.status === "correct" ? "correct" : currentRecord.status === "wrong" ? "wrong" : "idle"
+              }
               selection={selection}
               status={statusForRecord(currentRecord, status)}
               tool={tool}

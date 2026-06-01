@@ -13,6 +13,7 @@ The app is built with Vite and React, deploys as static files, and is configured
 - **Results Viewer** (`/results.html`) - compare model runs with weighted scores, coverage, heatmaps, validation checks, timing, cost, and token totals.
 - **Human Benchmark** (`/human.html`) - run account-backed human benchmark sessions one random unseen question at a time.
 - **Profile** (`/profile.html`) - view benchmark progress, run history, and saved creator questions.
+- **1v1 Challenge** (`/challenge.html?id=...`) - profile-launched duel mode where two users exchange created task JSON and race to solve.
 - **Admin Review** (`/admin.html`) - role-gated review queue for user-created questions.
 
 ## Local Development
@@ -32,6 +33,7 @@ Open `http://localhost:5173/grit3/` when using the current GitHub Pages-style ba
 - `http://localhost:5173/grit3/results.html`
 - `http://localhost:5173/grit3/human.html`
 - `http://localhost:5173/grit3/profile.html`
+- `http://localhost:5173/grit3/challenge.html?id=<challenge-id>`
 - `http://localhost:5173/grit3/admin.html`
 
 Run the checks before publishing:

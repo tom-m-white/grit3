@@ -1,8 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { AppHeader } from "./AppHeader";
-import { AuthGate, type AppAccount } from "./account";
+import { AuthGate, type AppAccount, useAccount } from "./account";
 import { type BenchmarkRunBundle, listUserRuns } from "./benchmarkStore";
+import {
+  type DuelChallengeSummary,
+  createDuelChallenge,
+  listUserDuelChallenges,
+  respondDuelChallenge
+} from "./challengeStore";
 import { type CreatedQuestionRow, listUserCreatedQuestions } from "./createdQuestionsStore";
+import { duelChallengePath } from "./duelSession";
 import { summarizeHumanSession } from "./humanBenchmarkSession";
 import { getPublicProfile, profileStoreErrorMessage, type PublicProfileSummary } from "./publicProfileStore";
 import { appPath } from "./routes";
@@ -21,9 +28,12 @@ export function ProfileApp() {
 }
 
 function PublicProfilePage({ publicUsername }: { publicUsername: string }) {
+  const account = useAccount();
   const [publicProfile, setPublicProfile] = useState<PublicProfileSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("Loading profile...");
+  const [challengeBusy, setChallengeBusy] = useState(false);
+  const viewerAccount = account.status === "ready" && account.user && account.profile ? { user: account.user, profile: account.profile } : null;
 
   useEffect(() => {
     async function loadPublicProfile() {
@@ -42,6 +52,19 @@ function PublicProfilePage({ publicUsername }: { publicUsername: string }) {
     void loadPublicProfile();
   }, [publicUsername]);
 
+  async function challengeProfile(username: string) {
+    setChallengeBusy(true);
+    setStatus("Creating challenge...");
+    try {
+      const challengeId = await createDuelChallenge(username);
+      window.location.href = duelChallengePath(challengeId);
+    } catch (error) {
+      setStatus(profileStoreErrorMessage(error, "Challenge could not be created."));
+    } finally {
+      setChallengeBusy(false);
+    }
+  }
+
   return (
     <main className="app-shell">
       <AppHeader
@@ -51,11 +74,23 @@ function PublicProfilePage({ publicUsername }: { publicUsername: string }) {
             {publicProfile?.role === "admin" ? <RoleBadge /> : null}
           </span>
         }
+        account={viewerAccount ?? undefined}
+        onSignOut={account.status === "ready" ? account.signOut : undefined}
         searchId="public-profile-search"
       />
 
       <section className="profile-workspace">
-        {loading ? <div className="empty-state">Loading profile...</div> : <PublicProfileView profile={publicProfile} requestedUsername={publicUsername} />}
+        {loading ? (
+          <div className="empty-state">Loading profile...</div>
+        ) : (
+          <PublicProfileView
+            challengeBusy={challengeBusy}
+            onChallenge={challengeProfile}
+            profile={publicProfile}
+            requestedUsername={publicUsername}
+            viewerAccount={viewerAccount}
+          />
+        )}
       </section>
 
       <div className="save-status" role="status">
@@ -67,6 +102,7 @@ function PublicProfilePage({ publicUsername }: { publicUsername: string }) {
 
 function ProfileWorkspace({ account, onSignOut }: { account: AppAccount; onSignOut: () => Promise<void> }) {
   const [runs, setRuns] = useState<BenchmarkRunBundle[]>([]);
+  const [duelChallenges, setDuelChallenges] = useState<DuelChallengeSummary[]>([]);
   const [createdQuestions, setCreatedQuestions] = useState<CreatedQuestionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("Loading profile...");
@@ -87,17 +123,39 @@ function ProfileWorkspace({ account, onSignOut }: { account: AppAccount; onSignO
   async function refresh() {
     setLoading(true);
     try {
-      const [nextRuns, nextQuestions] = await Promise.all([
+      const [nextRuns, nextQuestions, nextChallenges] = await Promise.all([
         listUserRuns(account.user.id),
-        listUserCreatedQuestions(account.user.id)
+        listUserCreatedQuestions(account.user.id),
+        listUserDuelChallenges()
       ]);
       setRuns(nextRuns);
       setCreatedQuestions(nextQuestions);
+      setDuelChallenges(nextChallenges);
       setStatus("Profile loaded.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Profile could not be loaded.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function acceptChallenge(challenge: DuelChallengeSummary) {
+    setStatus("Accepting challenge...");
+    try {
+      await respondDuelChallenge(challenge.id, true);
+      window.location.href = duelChallengePath(challenge.id);
+    } catch (error) {
+      setStatus(profileStoreErrorMessage(error, "Challenge could not be accepted."));
+    }
+  }
+
+  async function declineChallenge(challenge: DuelChallengeSummary) {
+    setStatus("Declining challenge...");
+    try {
+      await respondDuelChallenge(challenge.id, false);
+      await refresh();
+    } catch (error) {
+      setStatus(profileStoreErrorMessage(error, "Challenge could not be declined."));
     }
   }
 
@@ -147,6 +205,19 @@ function ProfileWorkspace({ account, onSignOut }: { account: AppAccount; onSignO
             <section className="panel profile-panel">
               <div className="panel-header">
                 <div>
+                  <p className="eyebrow">1v1</p>
+                  <h2>Challenges</h2>
+                </div>
+                <a className="button secondary" href={appPath("/")}>
+                  Find Opponent
+                </a>
+              </div>
+              <ChallengesTable challenges={duelChallenges} onAccept={acceptChallenge} onDecline={declineChallenge} />
+            </section>
+
+            <section className="panel profile-panel">
+              <div className="panel-header">
+                <div>
                   <p className="eyebrow">History</p>
                   <h2>Benchmark runs</h2>
                 </div>
@@ -178,11 +249,17 @@ function ProfileWorkspace({ account, onSignOut }: { account: AppAccount; onSignO
 }
 
 function PublicProfileView({
+  challengeBusy,
+  onChallenge,
   profile,
-  requestedUsername
+  requestedUsername,
+  viewerAccount
 }: {
+  challengeBusy: boolean;
+  onChallenge: (username: string) => void;
   profile: PublicProfileSummary | null;
   requestedUsername: string;
+  viewerAccount: AppAccount | null;
 }) {
   if (!profile) {
     return (
@@ -201,6 +278,10 @@ function PublicProfileView({
     );
   }
 
+  const canChallenge = Boolean(
+    viewerAccount && viewerAccount.profile.username.toLowerCase() !== profile.username.toLowerCase()
+  );
+
   return (
     <>
       <section className="panel profile-panel">
@@ -212,9 +293,16 @@ function PublicProfileView({
               {profile.role === "admin" ? <RoleBadge /> : null}
             </h2>
           </div>
-          <a className="button secondary" href={appPath("/profile.html")}>
-            My Profile
-          </a>
+          <div className="nav-actions">
+            {canChallenge ? (
+              <button className="button primary" type="button" onClick={() => onChallenge(profile.username)} disabled={challengeBusy}>
+                Challenge
+              </button>
+            ) : null}
+            <a className="button secondary" href={appPath("/profile.html")}>
+              My Profile
+            </a>
+          </div>
         </div>
         <div className="summary-metrics profile-metrics">
           <Metric label="Completed runs" value={String(profile.completed_run_count)} />
@@ -256,6 +344,73 @@ function PublicProfileView({
         </div>
       </section>
     </>
+  );
+}
+
+function ChallengesTable({
+  challenges,
+  onAccept,
+  onDecline
+}: {
+  challenges: DuelChallengeSummary[];
+  onAccept: (challenge: DuelChallengeSummary) => void;
+  onDecline: (challenge: DuelChallengeSummary) => void;
+}) {
+  if (challenges.length === 0) {
+    return <div className="empty-state">No challenges yet. Search a profile and press Challenge to start one.</div>;
+  }
+
+  return (
+    <div className="summary-table-wrap">
+      <table className="summary-table">
+        <thead>
+          <tr>
+            <th>Opponent</th>
+            <th>Status</th>
+            <th>Mode</th>
+            <th>Tasks</th>
+            <th>Winner</th>
+            <th>Updated</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {challenges.map((challenge) => (
+            <tr key={challenge.id}>
+              <td>
+                <a className="table-link" href={appPath(`/profile.html?u=${encodeURIComponent(challenge.opponent_username)}`)}>
+                  {challenge.opponent_username}
+                </a>
+              </td>
+              <td>{formatChallengeStatus(challenge)}</td>
+              <td>{challenge.attempt_mode === "one" ? "one attempt" : "unlimited"}</td>
+              <td>
+                {challenge.viewer_task_uploaded ? "you" : "-"} / {challenge.opponent_task_uploaded ? "opponent" : "-"}
+              </td>
+              <td>{challenge.winner_username ?? "n/a"}</td>
+              <td>{formatDate(challenge.updated_at)}</td>
+              <td>
+                <div className="table-actions">
+                  {challenge.status === "pending" && challenge.role === "challenged" ? (
+                    <>
+                      <button className="table-link" type="button" onClick={() => onAccept(challenge)}>
+                        Accept
+                      </button>
+                      <button className="table-link danger-link" type="button" onClick={() => onDecline(challenge)}>
+                        Decline
+                      </button>
+                    </>
+                  ) : null}
+                  <a className="table-link" href={duelChallengePath(challenge.id)}>
+                    Open
+                  </a>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -351,6 +506,19 @@ function formatDate(value: string): string {
 
 function formatScore(correct: number, total: number): string {
   return total > 0 ? `${correct}/${total}` : "n/a";
+}
+
+function formatChallengeStatus(challenge: DuelChallengeSummary): string {
+  if (challenge.status === "pending" && challenge.role === "challenged") {
+    return "incoming";
+  }
+  if (challenge.status === "pending") {
+    return "sent";
+  }
+  if (challenge.status === "accepted") {
+    return "waiting";
+  }
+  return challenge.status;
 }
 
 function RoleBadge() {

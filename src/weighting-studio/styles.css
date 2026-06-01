@@ -627,6 +627,16 @@ h3 {
   font-weight: 800;
 }
 
+.danger-link {
+  color: var(--danger);
+}
+
+.table-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .override-cell {
   color: var(--warn);
   font-weight: 900;
@@ -1396,6 +1406,95 @@ h3 {
   font-size: 0.9rem;
 }
 
+.challenge-empty-panel {
+  margin: 16px;
+}
+
+.challenge-center,
+.challenge-waiting {
+  padding: 16px;
+}
+
+.challenge-status-panel {
+  max-width: 960px;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+.challenge-copy {
+  padding: 14px;
+  color: var(--muted);
+  font-size: 0.94rem;
+  line-height: 1.48;
+}
+
+.challenge-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 0 14px 14px;
+}
+
+.challenge-actions.compact {
+  justify-content: flex-start;
+  padding: 0;
+}
+
+.challenge-metrics {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.challenge-attempt-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.toggle-row {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.toggle-row input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
+.challenge-upload-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 14px;
+  padding: 14px;
+}
+
+.challenge-json-field {
+  padding: 0;
+}
+
+.challenge-json-field textarea {
+  min-height: 260px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.challenge-upload-side {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
 .profile-workspace {
   display: grid;
   gap: 16px;
@@ -2082,7 +2181,9 @@ h3 {
   .profile-workspace,
   .human-workspace,
   .human-start,
-  .human-complete {
+  .human-complete,
+  .challenge-center,
+  .challenge-waiting {
     padding: 10px;
   }
 
@@ -2097,13 +2198,16 @@ h3 {
     .human-run-metrics,
     .human-start-metrics,
     .human-complete-metrics,
-    .profile-metrics {
+    .profile-metrics,
+    .challenge-metrics,
+    .challenge-upload-grid {
     grid-template-columns: 1fr;
   }
 
   .creator-toolbar,
   .creator-size-row,
-  .human-submit-row {
+  .human-submit-row,
+  .challenge-attempt-row {
     align-items: stretch;
     flex-direction: column;
   }
