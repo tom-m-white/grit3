@@ -1,4 +1,4 @@
-import type { ArcGrid, ArcTask } from "./types";
+import type { ArcGrid, ArcPair, ArcTask } from "./types";
 
 export type CreatorCaseKind = "train" | "test";
 export type CreatorGridKey = "input" | "output";
@@ -11,6 +11,12 @@ export interface CreatorCase {
   kind: CreatorCaseKind;
   input: ArcGrid;
   output: ArcGrid;
+}
+
+export interface CreatorTaskImport {
+  trainCases: CreatorCase[];
+  testCases: CreatorCase[];
+  title: string | null;
 }
 
 export interface GridSelection {
@@ -455,6 +461,39 @@ export function serializeCreatorTask(trainCases: CreatorCase[], testCases: Creat
   };
 }
 
+export function importCreatorJson(input: unknown): CreatorTaskImport {
+  const title = readImportedTitle(input);
+
+  if (isCreatorDraftJson(input)) {
+    return {
+      title,
+      trainCases: readCreatorCases(input.trainCases, "train"),
+      testCases: readCreatorCases(input.testCases, "test")
+    };
+  }
+
+  const source = isRecord(input) && isRecord(input.task) ? input.task : input;
+  const cases = creatorCasesFromArcTask(readArcTask(source));
+  return {
+    title,
+    ...cases
+  };
+}
+
+export function creatorCasesFromArcTask(task: ArcTask): Omit<CreatorTaskImport, "title"> {
+  if (task.train.length === 0) {
+    throw new Error("Task must include at least one train example.");
+  }
+  if (task.test.length === 0) {
+    throw new Error("Task must include at least one test case.");
+  }
+
+  return {
+    trainCases: task.train.map((pair, index) => creatorCaseFromArcPair(pair, "train", index)),
+    testCases: task.test.map((pair, index) => creatorCaseFromArcPair(pair, "test", index))
+  };
+}
+
 export function validateArcTask(task: ArcTask): string[] {
   const errors: string[] = [];
   if (task.train.length === 0) {
@@ -474,6 +513,110 @@ export function validateArcTask(task: ArcTask): string[] {
   });
 
   return errors;
+}
+
+function readArcTask(input: unknown): ArcTask {
+  if (!isRecord(input)) {
+    throw new Error("JSON must be an ARC task object with train and test arrays.");
+  }
+  if (!Array.isArray(input.train) || !Array.isArray(input.test)) {
+    throw new Error("ARC task JSON must include train and test arrays.");
+  }
+
+  return {
+    train: input.train.map((pair, index) => readArcPair(pair, `train[${index}]`, true)),
+    test: input.test.map((pair, index) => readArcPair(pair, `test[${index}]`, false))
+  };
+}
+
+function readArcPair(input: unknown, label: string, requireOutput: boolean): ArcPair {
+  if (!isRecord(input)) {
+    throw new Error(`${label} must be an object.`);
+  }
+
+  const pair: ArcPair = {
+    input: readGrid(input.input, `${label}.input`)
+  };
+
+  if (input.output !== undefined) {
+    pair.output = readGrid(input.output, `${label}.output`);
+  } else if (requireOutput) {
+    throw new Error(`${label}.output is required.`);
+  }
+
+  return pair;
+}
+
+function creatorCaseFromArcPair(pair: ArcPair, kind: CreatorCaseKind, index: number): CreatorCase {
+  const label = `${kind}[${index}]`;
+  const input = readGrid(pair.input, `${label}.input`);
+  const output =
+    pair.output === undefined
+      ? createGrid(input[0]?.length ?? MIN_GRID_SIZE, input.length, 0)
+      : readGrid(pair.output, `${label}.output`);
+
+  if (kind === "train" && pair.output === undefined) {
+    throw new Error(`${label}.output is required.`);
+  }
+
+  return {
+    id: `${kind}-${index + 1}`,
+    kind,
+    input,
+    output
+  };
+}
+
+function readCreatorCases(input: unknown[], kind: CreatorCaseKind): CreatorCase[] {
+  if (input.length === 0) {
+    throw new Error(`Task must include at least one ${kind} case.`);
+  }
+
+  return input.map((item, index) => readCreatorCase(item, kind, index));
+}
+
+function readCreatorCase(input: unknown, kind: CreatorCaseKind, index: number): CreatorCase {
+  if (!isRecord(input)) {
+    throw new Error(`${kind} case ${index + 1} must be an object.`);
+  }
+
+  return {
+    id: `${kind}-${index + 1}`,
+    kind,
+    input: readGrid(input.input, `${kind}Cases[${index}].input`),
+    output: readGrid(input.output, `${kind}Cases[${index}].output`)
+  };
+}
+
+function readGrid(input: unknown, label: string): ArcGrid {
+  const errors = validateGrid(input as ArcGrid | undefined, label);
+  if (errors.length > 0) {
+    throw new Error(errors[0]);
+  }
+  return cloneGrid(input as ArcGrid);
+}
+
+function readImportedTitle(input: unknown): string | null {
+  if (!isRecord(input)) {
+    return null;
+  }
+
+  for (const key of ["title", "questionTitle", "name"]) {
+    const value = input[key];
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+
+  return null;
+}
+
+function isCreatorDraftJson(input: unknown): input is { trainCases: unknown[]; testCases: unknown[] } {
+  return isRecord(input) && Array.isArray(input.trainCases) && Array.isArray(input.testCases);
+}
+
+function isRecord(input: unknown): input is Record<string, unknown> {
+  return Boolean(input && typeof input === "object" && !Array.isArray(input));
 }
 
 export function validateGrid(grid: ArcGrid | undefined, label: string): string[] {

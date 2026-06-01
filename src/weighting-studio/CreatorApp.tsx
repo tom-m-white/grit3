@@ -1,4 +1,4 @@
-import { type CSSProperties, type PointerEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type ChangeEvent, type CSSProperties, type PointerEvent, useEffect, useMemo, useRef, useState } from "react";
 import { AppHeader } from "./AppHeader";
 import { AuthGate, type AppAccount } from "./account";
 import { saveCreatedQuestion } from "./createdQuestionsStore";
@@ -13,6 +13,7 @@ import {
   floodFillGrid,
   flipGrid,
   gridDimensions,
+  importCreatorJson,
   normalizeSelection,
   pasteClipboard,
   resizeGrid,
@@ -64,6 +65,7 @@ function CreatorWorkspace({ account, onSignOut }: { account: AppAccount; onSignO
   const [selection, setSelection] = useState<GridSelection | null>(null);
   const [clipboard, setClipboard] = useState<GridClipboard | null>(null);
   const [status, setStatus] = useState("Draft autosaved locally.");
+  const importInputRef = useRef<HTMLInputElement | null>(null);
   const draftRef = useRef(draft);
   const isPointerDownRef = useRef(false);
   const lastPaintedRef = useRef<string | null>(null);
@@ -338,6 +340,39 @@ function CreatorWorkspace({ account, onSignOut }: { account: AppAccount; onSignO
     setStatus("Downloaded task JSON.");
   }
 
+  async function handleImportJson(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = "";
+    if (!file) {
+      return;
+    }
+
+    setStatus("Loading task JSON...");
+
+    try {
+      const parsed = JSON.parse(await file.text()) as unknown;
+      const imported = importCreatorJson(parsed);
+      const nextDraft = normalizeDraft({
+        trainCases: imported.trainCases,
+        testCases: imported.testCases,
+        selectedKind: "train",
+        selectedCaseId: imported.trainCases[0]?.id ?? "",
+        selectedGridKey: "input"
+      });
+      const importedTitle = imported.title ?? titleFromFilename(file.name);
+
+      commitDraft(
+        () => nextDraft,
+        `Loaded ${file.name}: ${nextDraft.trainCases.length} train and ${nextDraft.testCases.length} test case(s).`
+      );
+      setClipboard(null);
+      setSavedQuestionId(null);
+      setQuestionTitle(importedTitle || "Imported question");
+    } catch (error) {
+      setStatus(error instanceof Error ? `JSON import failed: ${error.message}` : "JSON import failed.");
+    }
+  }
+
   async function saveQuestion(reviewStatus: "draft" | "submitted") {
     if (validationErrors.length > 0) {
       setStatus("Fix validation errors before saving this question.");
@@ -584,6 +619,17 @@ function CreatorWorkspace({ account, onSignOut }: { account: AppAccount; onSignO
                 )}
               </div>
               <div className="nav-actions creator-export-actions">
+                <input
+                  ref={importInputRef}
+                  className="sr-only"
+                  type="file"
+                  accept="application/json,.json"
+                  aria-label="Load task JSON"
+                  onChange={(event) => void handleImportJson(event)}
+                />
+                <button className="button secondary" type="button" onClick={() => importInputRef.current?.click()}>
+                  Load JSON
+                </button>
                 <button className="button secondary" type="button" onClick={() => void saveQuestion("draft")}>
                   Save Draft
                 </button>
@@ -834,6 +880,10 @@ function labelKind(kind: CreatorCaseKind): string {
 
 function labelGrid(key: CreatorGridKey): string {
   return key === "input" ? "input" : "output";
+}
+
+function titleFromFilename(filename: string): string {
+  return filename.replace(/\.json$/i, "").trim();
 }
 
 function getEditableCellSize(width: number, height: number): string {

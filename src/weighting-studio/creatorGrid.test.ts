@@ -9,6 +9,7 @@ import {
   floodFillGrid,
   flipGridSelection,
   flipGrid,
+  importCreatorJson,
   isCellInGridSelection,
   pasteClipboard,
   pasteSparseClipboard,
@@ -305,6 +306,44 @@ describe("creator grid helpers", () => {
     });
     expect(validateArcTask(task)).toEqual([]);
     expect(adaptArcTask(task)).toEqual(task);
+  });
+
+  it("imports ARC task JSON into editable creator cases", () => {
+    const imported = importCreatorJson({
+      title: "Diagonal rule",
+      train: [{ input: [[1]], output: [[2]] }],
+      test: [{ input: [[3]], output: [[4]] }]
+    });
+
+    expect(imported.title).toBe("Diagonal rule");
+    expect(imported.trainCases).toEqual([
+      {
+        id: "train-1",
+        kind: "train",
+        input: [[1]],
+        output: [[2]]
+      }
+    ]);
+    expect(imported.testCases).toEqual([
+      {
+        id: "test-1",
+        kind: "test",
+        input: [[3]],
+        output: [[4]]
+      }
+    ]);
+  });
+
+  it("creates blank editable outputs for imported test cases without hidden answers", () => {
+    const imported = importCreatorJson({
+      task: {
+        train: [{ input: [[1, 0]], output: [[0, 1]] }],
+        test: [{ input: [[5, 5, 5]] }]
+      }
+    });
+
+    expect(imported.testCases[0].input).toEqual([[5, 5, 5]]);
+    expect(imported.testCases[0].output).toEqual([[0, 0, 0]]);
   });
 
   it("reports invalid ARC task shapes", () => {
