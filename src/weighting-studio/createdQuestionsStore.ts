@@ -67,6 +67,29 @@ export async function listUserCreatedQuestions(ownerId: string): Promise<Created
   return (data ?? []) as CreatedQuestionRow[];
 }
 
+export async function deleteCreatedQuestion({
+  ownerId,
+  questionId
+}: {
+  ownerId: string;
+  questionId: string;
+}): Promise<void> {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from("created_questions")
+    .delete()
+    .eq("id", questionId)
+    .eq("owner_id", ownerId)
+    .select("id")
+    .maybeSingle();
+  if (error) {
+    throw error;
+  }
+  if (!data) {
+    throw new Error("Question was not removed. It may already be gone or you may not have permission.");
+  }
+}
+
 export async function listReviewQueue(): Promise<CreatedQuestionRow[]> {
   const client = requireSupabase();
   const { data, error } = await client

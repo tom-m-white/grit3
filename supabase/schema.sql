@@ -382,6 +382,11 @@ on public.created_questions for update
 using (owner_id = auth.uid())
 with check (owner_id = auth.uid() and review_status in ('draft', 'submitted'));
 
+drop policy if exists "created_questions_owner_delete" on public.created_questions;
+create policy "created_questions_owner_delete"
+on public.created_questions for delete
+using (owner_id = auth.uid());
+
 drop policy if exists "created_questions_admin_update" on public.created_questions;
 create policy "created_questions_admin_update"
 on public.created_questions for update

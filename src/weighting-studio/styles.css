@@ -627,6 +627,11 @@ h3 {
   font-weight: 800;
 }
 
+.table-link:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
 .danger-link {
   color: var(--danger);
 }

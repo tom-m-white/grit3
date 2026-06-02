@@ -8,7 +8,7 @@ import {
   listUserDuelChallenges,
   respondDuelChallenge
 } from "./challengeStore";
-import { type CreatedQuestionRow, listUserCreatedQuestions } from "./createdQuestionsStore";
+import { type CreatedQuestionRow, deleteCreatedQuestion, listUserCreatedQuestions } from "./createdQuestionsStore";
 import { duelChallengePath } from "./duelSession";
 import { summarizeHumanSession } from "./humanBenchmarkSession";
 import { getPublicProfile, profileStoreErrorMessage, type PublicProfileSummary } from "./publicProfileStore";
@@ -105,6 +105,7 @@ function ProfileWorkspace({ account, onSignOut }: { account: AppAccount; onSignO
   const [duelChallenges, setDuelChallenges] = useState<DuelChallengeSummary[]>([]);
   const [createdQuestions, setCreatedQuestions] = useState<CreatedQuestionRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [removingQuestionId, setRemovingQuestionId] = useState<string | null>(null);
   const [status, setStatus] = useState("Loading profile...");
   const activeRun = runs.find((bundle) => bundle.run.status !== "completed") ?? null;
   const completedRuns = runs.filter((bundle) => bundle.run.status === "completed");
@@ -156,6 +157,28 @@ function ProfileWorkspace({ account, onSignOut }: { account: AppAccount; onSignO
       await refresh();
     } catch (error) {
       setStatus(profileStoreErrorMessage(error, "Challenge could not be declined."));
+    }
+  }
+
+  async function removeCreatedQuestion(question: CreatedQuestionRow) {
+    const confirmed = window.confirm(`Remove "${question.title}" from your profile? This cannot be undone.`);
+    if (!confirmed) {
+      return;
+    }
+
+    setRemovingQuestionId(question.id);
+    setStatus("Removing question...");
+    try {
+      await deleteCreatedQuestion({
+        ownerId: account.user.id,
+        questionId: question.id
+      });
+      setCreatedQuestions((items) => items.filter((item) => item.id !== question.id));
+      setStatus("Question removed from your profile.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Question could not be removed.");
+    } finally {
+      setRemovingQuestionId(null);
     }
   }
 
@@ -235,7 +258,11 @@ function ProfileWorkspace({ account, onSignOut }: { account: AppAccount; onSignO
                   Create Question
                 </a>
               </div>
-              <CreatedQuestionsTable questions={createdQuestions} />
+              <CreatedQuestionsTable
+                questions={createdQuestions}
+                removingQuestionId={removingQuestionId}
+                onRemove={removeCreatedQuestion}
+              />
             </section>
           </>
         )}
@@ -456,7 +483,15 @@ function RunTable({ runs }: { runs: BenchmarkRunBundle[] }) {
   );
 }
 
-function CreatedQuestionsTable({ questions }: { questions: CreatedQuestionRow[] }) {
+function CreatedQuestionsTable({
+  questions,
+  removingQuestionId,
+  onRemove
+}: {
+  questions: CreatedQuestionRow[];
+  removingQuestionId: string | null;
+  onRemove: (question: CreatedQuestionRow) => void;
+}) {
   if (questions.length === 0) {
     return <div className="empty-state">No saved creator questions yet.</div>;
   }
@@ -472,6 +507,7 @@ function CreatedQuestionsTable({ questions }: { questions: CreatedQuestionRow[] 
             <th>Test</th>
             <th>Updated</th>
             <th>Reviewer notes</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -483,6 +519,16 @@ function CreatedQuestionsTable({ questions }: { questions: CreatedQuestionRow[] 
               <td>{question.task.test.length}</td>
               <td>{formatDate(question.updated_at)}</td>
               <td>{question.reviewer_notes || "none"}</td>
+              <td>
+                <button
+                  className="table-link danger-link"
+                  type="button"
+                  onClick={() => onRemove(question)}
+                  disabled={removingQuestionId === question.id}
+                >
+                  {removingQuestionId === question.id ? "Removing..." : "Remove"}
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>
