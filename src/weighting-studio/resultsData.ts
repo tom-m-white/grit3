@@ -156,6 +156,16 @@ export interface ModelSummary {
   validationQuestionCount: number;
 }
 
+export interface QuestionWinRate {
+  questionId: QuestionId;
+  correctCount: number;
+  wrongCount: number;
+  evaluatedCount: number;
+  notEvaluatedCount: number;
+  totalModelCount: number;
+  winPercent: number | null;
+}
+
 type CsvRow = Record<(typeof CSV_COLUMNS)[number], string>;
 
 export function loadBundledProfile(): WeightingProfile {
@@ -285,6 +295,42 @@ export function summarizeModelResults(
     validationIssueCount,
     validationQuestionCount
   };
+}
+
+export function summarizeQuestionWinRates(models: ModelResult[]): Record<QuestionId, QuestionWinRate> {
+  return Object.fromEntries(
+    QUESTION_IDS.map((questionId) => {
+      let correctCount = 0;
+      let wrongCount = 0;
+      let notEvaluatedCount = 0;
+
+      for (const model of models) {
+        const status = model.results[questionId]?.status ?? "not_evaluated";
+        if (status === "correct") {
+          correctCount += 1;
+        } else if (status === "wrong") {
+          wrongCount += 1;
+        } else {
+          notEvaluatedCount += 1;
+        }
+      }
+
+      const evaluatedCount = correctCount + wrongCount;
+
+      return [
+        questionId,
+        {
+          questionId,
+          correctCount,
+          wrongCount,
+          evaluatedCount,
+          notEvaluatedCount,
+          totalModelCount: models.length,
+          winPercent: evaluatedCount === 0 ? null : roundPercent(correctCount / evaluatedCount)
+        }
+      ];
+    })
+  ) as Record<QuestionId, QuestionWinRate>;
 }
 
 export function parseResultStatus(cellAccuracy: string): { status: ResultStatus; cellAccuracy: number | null } {

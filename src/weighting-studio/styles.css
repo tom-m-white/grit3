@@ -1078,6 +1078,27 @@ h3 {
   text-align: left;
 }
 
+.heatmap-question-header {
+  min-width: 42px;
+}
+
+.heatmap-question-header span {
+  display: block;
+  line-height: 1.15;
+}
+
+.heatmap-question-label {
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.heatmap-question-win {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
 .heatmap-cell {
   width: 28px;
   height: 28px;
@@ -1119,9 +1140,15 @@ h3 {
 
 .question-profile-strip {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 150px)) minmax(220px, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 150px)) minmax(220px, 1fr);
   gap: 10px;
   padding: 14px;
+}
+
+.question-profile-strip .metric strong {
+  overflow-wrap: anywhere;
+  font-size: 1.15rem;
+  line-height: 1.15;
 }
 
 .profile-notes {

@@ -7,8 +7,10 @@ import {
   getExpectedOutputs,
   loadBundledProfile,
   loadBundledResults,
+  summarizeQuestionWinRates,
   type MetricSource,
   type ModelResult,
+  type QuestionWinRate,
   type ResultStatus
 } from "./resultsData";
 import type { ArcGrid, QuestionId } from "./types";
@@ -16,6 +18,7 @@ import type { ArcGrid, QuestionId } from "./types";
 const QUESTIONS = loadQuestions();
 const PROFILE = loadBundledProfile();
 const MODELS = loadBundledResults(PROFILE, QUESTIONS);
+const QUESTION_WIN_RATES = summarizeQuestionWinRates(MODELS);
 const RELEASE_CHART_POINTS = buildReleaseDateChartPoints(MODELS);
 const COST_CHART_POINTS = buildCostChartPoints(MODELS);
 
@@ -46,6 +49,7 @@ export function ResultsApp() {
   const totalWeight = QUESTION_IDS.reduce((sum, questionId) => sum + PROFILE.questions[questionId].final_weight, 0);
   const selectedQuestion = QUESTIONS.find((question) => question.question_id === selectedQuestionId);
   const selectedProfile = PROFILE.questions[selectedQuestionId];
+  const selectedWinRate = QUESTION_WIN_RATES[selectedQuestionId];
   const visibleModels = selectedModelId === "all" ? MODELS : MODELS.filter((model) => model.id === selectedModelId);
   const sortedModels = useMemo(() => sortModels(MODELS, sortKey), [sortKey]);
   const averageCoverage =
@@ -182,9 +186,15 @@ export function ResultsApp() {
                 <thead>
                   <tr>
                     <th>Model</th>
-                    {QUESTION_IDS.map((questionId) => (
-                      <th key={questionId}>{questionId}</th>
-                    ))}
+                    {QUESTION_IDS.map((questionId) => {
+                      const winRate = QUESTION_WIN_RATES[questionId];
+                      return (
+                        <th className="heatmap-question-header" key={questionId} title={formatQuestionWinRateTitle(questionId, winRate)}>
+                          <span className="heatmap-question-label">{questionId}</span>
+                          <span className="heatmap-question-win">{formatNullablePercent(winRate.winPercent)}</span>
+                        </th>
+                      );
+                    })}
                   </tr>
                 </thead>
                 <tbody>
@@ -257,6 +267,7 @@ export function ResultsApp() {
             <Metric label="Weight" value={String(selectedProfile.final_weight)} />
             <Metric label="Rubric avg" value={selectedProfile.computed_average.toFixed(2)} />
             <Metric label="Suggested" value={String(selectedProfile.suggested_weight_bucket)} />
+            <Metric label="Model win rate" value={formatQuestionWinRate(selectedWinRate)} />
             <div className="profile-notes">
               <strong>Tags</strong>
               <span>{selectedProfile.tags.length > 0 ? selectedProfile.tags.join(", ") : "None"}</span>
@@ -665,6 +676,14 @@ function statusSymbol(status: ResultStatus): string {
 
 function formatNullablePercent(value: number | null): string {
   return value === null ? "n/a" : `${value}%`;
+}
+
+function formatQuestionWinRate(winRate: QuestionWinRate): string {
+  return `${winRate.correctCount}/${winRate.evaluatedCount} (${formatNullablePercent(winRate.winPercent)})`;
+}
+
+function formatQuestionWinRateTitle(questionId: QuestionId, winRate: QuestionWinRate): string {
+  return `${questionId} model win rate: ${formatQuestionWinRate(winRate)}; ${winRate.notEvaluatedCount} not run of ${winRate.totalModelCount} models`;
 }
 
 function formatChartPercent(value: number): string {

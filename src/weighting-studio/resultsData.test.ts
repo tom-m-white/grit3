@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createDefaultProfile, withUpdatedEntry } from "./profile";
-import { parseModelCsv, parseModelOutput, parseResultStatus } from "./resultsData";
+import { parseModelCsv, parseModelOutput, parseResultStatus, summarizeQuestionWinRates } from "./resultsData";
 import type { QuestionId } from "./types";
 
 const q3 = "q3" as QuestionId;
@@ -73,6 +73,36 @@ describe("results data", () => {
     expect(model.summary.totalSeconds).toBe(30);
     expect(model.summary.totalDollars).toBe(4);
     expect(model.summary.totalTokens).toBe(3000);
+  });
+
+  it("summarizes per-question model win rates with evaluated-only denominator", () => {
+    const profile = testProfile();
+    const models = [
+      parseModelCsv("correct.csv", singleResultCsv({ modelName: "correct model", cellAccuracy: "100%" }), profile),
+      parseModelCsv("wrong.csv", singleResultCsv({ modelName: "wrong model", cellAccuracy: "25%" }), profile),
+      parseModelCsv("blank.csv", singleResultCsv({ modelName: "blank model", cellAccuracy: "" }), profile)
+    ];
+
+    const winRates = summarizeQuestionWinRates(models);
+
+    expect(winRates[q3]).toMatchObject({
+      questionId: q3,
+      correctCount: 1,
+      wrongCount: 1,
+      evaluatedCount: 2,
+      notEvaluatedCount: 1,
+      totalModelCount: 3,
+      winPercent: 50
+    });
+    expect(winRates[q4]).toMatchObject({
+      questionId: q4,
+      correctCount: 0,
+      wrongCount: 0,
+      evaluatedCount: 0,
+      notEvaluatedCount: 3,
+      totalModelCount: 3,
+      winPercent: null
+    });
   });
 
   it("uses recorded cost and tokens before model estimates", () => {
