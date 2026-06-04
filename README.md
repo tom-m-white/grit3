@@ -128,6 +128,14 @@ Optional cost calculation:
 npm.cmd run benchmark:openai -- --model gpt-5.5 --name "gpt-5.5" --input-price-per-1m 5 --output-price-per-1m 30
 ```
 
+Flex processing uses the same lower token rates as the Batch API, but keeps the runner synchronous:
+
+```powershell
+npm.cmd run benchmark:openai -- --model gpt-5.4-mini --name "GPT-5.4 mini high flex" --reasoning high --flex --input-price-per-1m 0.375 --output-price-per-1m 2.25
+```
+
+The `--flex` flag sends `service_tier: "flex"` to OpenAI. Flex requests may be slower, so the runner allows up to 15 minutes per API request. The price flags only populate the CSV cost column and do not change API billing. The asynchronous Batch API is not exposed by this runner.
+
 The runner requires `--model` for every live run so it cannot accidentally spend against an implicit default. `OPENAI_API_KEY` is read from the environment and is never written to output CSV files.
 
 ## Weighting Rubric

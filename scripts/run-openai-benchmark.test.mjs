@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import { createDefaultProfile } from "../src/weighting-studio/profile";
 import { parseModelCsv } from "../src/weighting-studio/resultsData";
 import {
+  buildOpenAIRequestBody,
   generateResultsCsv,
   gradeOutputs,
   loadBenchmarkQuestions,
+  parseArgs,
   parseModelOutputText,
   preparePromptTask
 } from "./run-openai-benchmark.mjs";
@@ -35,6 +37,24 @@ describe("OpenAI benchmark runner", () => {
     expect(() => parseModelOutputText('{"outputs":[[[1]],[[2]]]}', 1)).toThrow(/2 grid/);
     expect(() => parseModelOutputText('{"outputs":[[[1,10]]]}', 1)).toThrow(/integer from 0 to 9/);
     expect(() => parseModelOutputText('{"outputs":[[[1],[2,3]]]}', 1)).toThrow(/match grid width/);
+  });
+
+  it("adds Flex processing only when requested", () => {
+    const question = {
+      questionId: "q3",
+      task: {
+        train: [{ input: [[1]], output: [[1]] }],
+        test: [{ input: [[1]], output: [[1]] }]
+      }
+    };
+
+    expect(parseArgs(["--model", "gpt-5.4-mini", "--flex"]).serviceTier).toBe("flex");
+    expect(buildOpenAIRequestBody({ model: "gpt-5.4-mini", reasoning: "high", serviceTier: "flex", question })).toMatchObject({
+      model: "gpt-5.4-mini",
+      reasoning: { effort: "high" },
+      service_tier: "flex"
+    });
+    expect(buildOpenAIRequestBody({ model: "gpt-5.4-mini", reasoning: "high", question })).not.toHaveProperty("service_tier");
   });
 
   it("grades exact, wrong, dimension-mismatched, and multi-test outputs", () => {

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import fs from "node:fs/promises";
+import https from "node:https";
 import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
@@ -10,8 +11,9 @@ export { compareGrid, gradeOutputs };
 export const QUESTION_IDS = Array.from({ length: 25 }, (_, index) => `q${index + 3}`);
 
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
+const OPENAI_REQUEST_TIMEOUT_MS = 15 * 60 * 1000;
 const VALID_REASONING = new Set(["none", "low", "medium", "high", "xhigh"]);
-const MAX_RETRIES = 3;
+const MAX_ATTEMPTS = 1;
 const CSV_HEADER = [
   "",
   "",
@@ -33,6 +35,7 @@ export function parseArgs(argv) {
     model: "",
     name: "",
     reasoning: "",
+    serviceTier: "",
     concurrency: 1,
     output: "",
     dryRun: false,
@@ -49,6 +52,10 @@ export function parseArgs(argv) {
     }
     if (arg === "--dry-run") {
       options.dryRun = true;
+      continue;
+    }
+    if (arg === "--flex") {
+      options.serviceTier = "flex";
       continue;
     }
 
@@ -158,7 +165,7 @@ export function buildQuestionPrompt(questionId, task) {
   ].join("\n");
 }
 
-export function buildOpenAIRequestBody({ model, reasoning, question }) {
+export function buildOpenAIRequestBody({ model, reasoning, serviceTier, question }) {
   const body = {
     model,
     input: [
@@ -188,6 +195,9 @@ export function buildOpenAIRequestBody({ model, reasoning, question }) {
 
   if (reasoning) {
     body.reasoning = { effort: reasoning };
+  }
+  if (serviceTier) {
+    body.service_tier = serviceTier;
   }
 
   return body;
@@ -269,19 +279,19 @@ export async function runAllQuestions(questions, options) {
 
 export async function runQuestionWithRetries(question, options) {
   let lastError = null;
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt += 1) {
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
     try {
       return await runQuestion(question, options);
     } catch (error) {
       lastError = error;
-      if (attempt < MAX_RETRIES) {
+      if (attempt < MAX_ATTEMPTS) {
         options.log?.(`${question.questionId} attempt ${attempt} failed: ${errorMessage(error)}. Retrying...`);
         await sleep(500 * attempt);
       }
     }
   }
 
-  options.log?.(`${question.questionId} failed after ${MAX_RETRIES} attempts: ${errorMessage(lastError)}`);
+  options.log?.(`${question.questionId} failed after ${MAX_ATTEMPTS} attempt: ${errorMessage(lastError)}`);
   return notEvaluatedResult(question, errorMessage(lastError));
 }
 
@@ -313,6 +323,7 @@ export async function callOpenAI(question, options) {
   const body = buildOpenAIRequestBody({
     model: options.model,
     reasoning: options.reasoning,
+    serviceTier: options.serviceTier,
     question
   });
   const response = await options.fetchFn(OPENAI_RESPONSES_URL, {
@@ -330,6 +341,39 @@ export async function callOpenAI(question, options) {
   }
 
   return response.json();
+}
+
+export function fetchOpenAI(url, options) {
+  return new Promise((resolve, reject) => {
+    const request = https.request(
+      url,
+      {
+        method: options.method,
+        headers: options.headers
+      },
+      (response) => {
+        const chunks = [];
+        response.setEncoding("utf8");
+        response.on("error", reject);
+        response.on("data", (chunk) => chunks.push(chunk));
+        response.on("end", () => {
+          const text = chunks.join("");
+          resolve({
+            ok: response.statusCode >= 200 && response.statusCode < 300,
+            status: response.statusCode ?? 0,
+            text: async () => text,
+            json: async () => JSON.parse(text)
+          });
+        });
+      }
+    );
+
+    request.setTimeout(OPENAI_REQUEST_TIMEOUT_MS, () => {
+      request.destroy(new Error(`OpenAI request timed out after ${OPENAI_REQUEST_TIMEOUT_MS / 60_000} minutes.`));
+    });
+    request.on("error", reject);
+    request.end(options.body);
+  });
 }
 
 export function extractResponseText(response) {
@@ -389,7 +433,12 @@ export async function main(argv = process.argv.slice(2), env = process.env, root
   if (options.dryRun) {
     for (const question of questions) {
       assertPromptDoesNotLeakTestOutputs(question);
-      buildOpenAIRequestBody({ model: options.model, reasoning: options.reasoning, question });
+      buildOpenAIRequestBody({
+        model: options.model,
+        reasoning: options.reasoning,
+        serviceTier: options.serviceTier,
+        question
+      });
     }
     console.log(`Dry run OK: loaded ${questions.length} questions (${QUESTION_IDS[0]}-${QUESTION_IDS.at(-1)}).`);
     console.log(`Model: ${options.model}`);
@@ -402,10 +451,11 @@ export async function main(argv = process.argv.slice(2), env = process.env, root
     apiKey: env.OPENAI_API_KEY,
     model: options.model,
     reasoning: options.reasoning,
+    serviceTier: options.serviceTier,
     concurrency: options.concurrency,
     inputPricePer1m: options.inputPricePer1m,
     outputPricePer1m: options.outputPricePer1m,
-    fetchFn: globalThis.fetch,
+    fetchFn: fetchOpenAI,
     log: (message) => console.log(message)
   });
   const csv = generateResultsCsv({
@@ -598,7 +648,18 @@ function truncate(value, length) {
 }
 
 function errorMessage(error) {
-  return error instanceof Error ? error.message : String(error);
+  if (!(error instanceof Error)) {
+    return String(error);
+  }
+
+  const cause = error.cause;
+  if (!cause) {
+    return error.message;
+  }
+
+  const causeMessage = errorMessage(cause);
+  const causeCode = typeof cause === "object" && cause !== null && "code" in cause ? String(cause.code) : "";
+  return `${error.message}: ${causeCode ? `${causeCode} ` : ""}${causeMessage}`;
 }
 
 function sleep(ms) {
@@ -613,6 +674,7 @@ function usage() {
     "Options:",
     "  --name <display-name>              Model name written to the CSV metadata",
     "  --reasoning <level>                none, low, medium, high, or xhigh",
+    "  --flex                             Use Flex processing at Batch API token rates",
     "  --concurrency <n>                  Number of questions to run at once, default 1",
     "  --output <path>                    CSV output path, default data/...",
     "  --input-price-per-1m <n>           Input token price for cost calculation",
