@@ -105,14 +105,32 @@ describe("results data", () => {
       { q3: 400 }
     );
 
-    expect(model.results.q3.effectiveTokens).toBe(686);
+    expect(model.results.q3.effectiveTokens).toBe(2355);
     expect(model.results.q3.tokensSource).toBe("estimated");
-    expect(model.results.q3.effectiveDollars).toBeCloseTo(0.01808, 6);
+    expect(model.results.q3.effectiveDollars).toBeCloseTo(0.055925, 6);
     expect(model.results.q3.dollarsSource).toBe("estimated");
-    expect(model.summary.totalTokens).toBe(686);
+    expect(model.summary.totalTokens).toBe(2355);
     expect(model.summary.totalTokensSource).toBe("estimated");
-    expect(model.summary.totalDollars).toBe(0.0181);
+    expect(model.summary.totalDollars).toBe(0.0559);
     expect(model.summary.totalDollarsSource).toBe("estimated");
+  });
+
+  it("attaches release dates from model name aliases", () => {
+    const cases = [
+      ["Claude Opus 4.8", "2026-05-28"],
+      ["gemini 3.5 flash", "2026-05-19"],
+      ["gemini 3.1 pro preview", "2026-02-19"],
+      ["chatgpt 5.5 ET", "2026-04-23"],
+      ["chatgpt 5.5 Extended thinking", "2026-04-23"],
+      ["deepseek v4 pro", "2026-04-24"],
+      ["grok_4.3_beta", "2026-04-17"],
+      ["GPT-5.4 mini high flex", "2026-03-17"]
+    ];
+
+    for (const [modelName, releaseDate] of cases) {
+      const model = parseModelCsv(`${modelName}.csv`, singleResultCsv({ modelName }), testProfile());
+      expect(model.metadata.releaseDate).toBe(releaseDate);
+    }
   });
 
   it("estimates missing Grok 4.3 beta cost and total tokens from prompt and runtime", () => {

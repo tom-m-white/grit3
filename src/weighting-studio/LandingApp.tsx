@@ -13,8 +13,7 @@ const LEADERBOARD = loadBundledResults(PROFILE)
       b.summary.fullProgressPercent - a.summary.fullProgressPercent ||
       b.summary.coveragePercent - a.summary.coveragePercent ||
       a.metadata.modelName.localeCompare(b.metadata.modelName)
-  )
-  .slice(0, 5);
+  );
 
 const tools = [
   {

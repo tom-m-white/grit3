@@ -39,9 +39,15 @@ export type MetricSource = "recorded" | "estimated" | "blank";
 
 interface ModelEstimateConfig {
   aliases: string[];
+  inputTokenMultiplier?: number;
   outputTokensPerSecond: number;
   inputPricePerMillion: number;
   outputPricePerMillion: number;
+}
+
+interface ModelReleaseDateConfig {
+  aliases: string[];
+  releaseDate: string;
 }
 
 const SYSTEM_PROMPT =
@@ -50,7 +56,8 @@ const SYSTEM_PROMPT =
 const MODEL_ESTIMATE_CONFIGS: ModelEstimateConfig[] = [
   {
     aliases: ["chatgpt 5 5", "gpt 5 5"],
-    outputTokensPerSecond: 58.6,
+    inputTokenMultiplier: 5.89,
+    outputTokensPerSecond: 176.62,
     inputPricePerMillion: 5,
     outputPricePerMillion: 30
   },
@@ -62,9 +69,41 @@ const MODEL_ESTIMATE_CONFIGS: ModelEstimateConfig[] = [
   }
 ];
 
+const MODEL_RELEASE_DATE_CONFIGS: ModelReleaseDateConfig[] = [
+  {
+    aliases: ["claude opus 4 8"],
+    releaseDate: "2026-05-28"
+  },
+  {
+    aliases: ["gemini 3 5 flash"],
+    releaseDate: "2026-05-19"
+  },
+  {
+    aliases: ["gemini 3 1 pro preview"],
+    releaseDate: "2026-02-19"
+  },
+  {
+    aliases: ["chatgpt 5 5 extended thinking", "chatgpt 5 5 et", "gpt 5 5 extended thinking", "gpt 5 5 et"],
+    releaseDate: "2026-04-23"
+  },
+  {
+    aliases: ["deepseek v4 pro", "deepseek v4 pro max"],
+    releaseDate: "2026-04-24"
+  },
+  {
+    aliases: ["grok 4 3 beta"],
+    releaseDate: "2026-04-17"
+  },
+  {
+    aliases: ["gpt 5 4 mini high flex"],
+    releaseDate: "2026-03-17"
+  }
+];
+
 export interface ModelMetadata {
   modelName: string;
   date?: string;
+  releaseDate?: string;
   thinkingLevel?: string;
 }
 
@@ -141,7 +180,11 @@ export function parseModelCsv(
   const rows = parseCsv(csv)
     .slice(1)
     .map((columns) => toCsvRow(columns));
-  const metadata = extractMetadata(rows, fileName);
+  const extractedMetadata = extractMetadata(rows, fileName);
+  const metadata = {
+    ...extractedMetadata,
+    releaseDate: findReleaseDate(extractedMetadata.modelName)
+  };
   const estimateConfig = findEstimateConfig(metadata.modelName);
   const totalWeight = QUESTION_IDS.reduce((sum, questionId) => sum + profile.questions[questionId].final_weight, 0);
 
@@ -335,7 +378,7 @@ function estimateQuestionMetrics(
     return { dollars: null, tokens: null };
   }
 
-  const inputTokens = Math.ceil(promptCharacterCount / 4);
+  const inputTokens = Math.ceil((promptCharacterCount / 4) * (estimateConfig.inputTokenMultiplier ?? 1));
   const outputTokens = Math.round(seconds * estimateConfig.outputTokensPerSecond);
   const dollars =
     (inputTokens / 1_000_000) * estimateConfig.inputPricePerMillion +
@@ -499,6 +542,11 @@ function buildQuestionPrompt(questionId: QuestionId, task: ArcTask): string {
 function findEstimateConfig(modelName: string): ModelEstimateConfig | null {
   const normalized = normalizeModelName(modelName);
   return MODEL_ESTIMATE_CONFIGS.find((config) => config.aliases.some((alias) => normalized.includes(alias))) ?? null;
+}
+
+function findReleaseDate(modelName: string): string | undefined {
+  const normalized = normalizeModelName(modelName);
+  return MODEL_RELEASE_DATE_CONFIGS.find((config) => config.aliases.some((alias) => normalized.includes(alias)))?.releaseDate;
 }
 
 function normalizeModelName(value: string): string {

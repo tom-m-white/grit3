@@ -16,8 +16,19 @@ import type { ArcGrid, QuestionId } from "./types";
 const QUESTIONS = loadQuestions();
 const PROFILE = loadBundledProfile();
 const MODELS = loadBundledResults(PROFILE, QUESTIONS);
+const RELEASE_CHART_POINTS = buildReleaseDateChartPoints(MODELS);
+const COST_CHART_POINTS = buildCostChartPoints(MODELS);
 
 type SortKey = "evaluatedWeightedPercent" | "fullProgressPercent" | "coveragePercent" | "correctCount" | "totalDollars";
+
+interface ChartPoint {
+  id: string;
+  label: string;
+  x: number;
+  y: number;
+  xText: string;
+  source?: MetricSource;
+}
 
 export function ResultsApp() {
   const [selectedQuestionId, setSelectedQuestionId] = useState<QuestionId>("q3");
@@ -53,6 +64,29 @@ export function ResultsApp() {
             <Metric label="Questions" value="25" />
             <Metric label="Validation issues" value={String(validationIssueCount)} />
           </div>
+        </section>
+
+        <section className="results-chart-grid">
+          <ScatterChart
+            eyebrow="Release"
+            title="Release date vs score"
+            xLabel="Model release date"
+            yLabel="Evaluated weighted score"
+            points={RELEASE_CHART_POINTS}
+            formatXTick={formatShortDate}
+            formatXValue={(point) => point.xText}
+          />
+          <ScatterChart
+            eyebrow="Cost"
+            title="Cost vs score"
+            xLabel="Total cost"
+            yLabel="Evaluated weighted score"
+            points={COST_CHART_POINTS}
+            formatXTick={formatChartDollars}
+            formatXValue={(point) => formatDollars(point.x, point.source)}
+            showSourceLegend
+            xStartsAtZero
+          />
         </section>
 
         <section className="results-grid">
@@ -250,6 +284,141 @@ export function ResultsApp() {
   );
 }
 
+function ScatterChart({
+  eyebrow,
+  title,
+  xLabel,
+  yLabel,
+  points,
+  formatXTick,
+  formatXValue,
+  showSourceLegend = false,
+  xStartsAtZero = false
+}: {
+  eyebrow: string;
+  title: string;
+  xLabel: string;
+  yLabel: string;
+  points: ChartPoint[];
+  formatXTick: (value: number) => string;
+  formatXValue: (point: ChartPoint) => string;
+  showSourceLegend?: boolean;
+  xStartsAtZero?: boolean;
+}) {
+  const width = 680;
+  const height = 340;
+  const top = 28;
+  const right = 28;
+  const bottom = 58;
+  const left = 58;
+  const chartWidth = width - left - right;
+  const chartHeight = height - top - bottom;
+  const xValues = points.length > 0 ? points.map((point) => point.x) : [0, 1];
+  const rawMinX = xStartsAtZero ? 0 : Math.min(...xValues);
+  const rawMaxX = Math.max(...xValues);
+  const rawSpanX = rawMaxX - rawMinX || Math.max(Math.abs(rawMaxX), 1);
+  const xMin = xStartsAtZero ? 0 : rawMinX - rawSpanX * 0.08;
+  const xMax = rawMaxX + rawSpanX * 0.08;
+  const xSpan = xMax - xMin || 1;
+  const xTicks = buildChartTicks(xMin, xMax, 3);
+  const yTicks = [0, 25, 50, 75, 100];
+
+  return (
+    <section className="panel results-chart-panel">
+      <div className="panel-header">
+        <div>
+          <p className="eyebrow">{eyebrow}</p>
+          <h2>{title}</h2>
+        </div>
+        {showSourceLegend ? (
+          <div className="chart-legend">
+            <span>
+              <i className="chart-swatch recorded" aria-hidden="true" />
+              Recorded
+            </span>
+            <span>
+              <i className="chart-swatch estimated" aria-hidden="true" />
+              Estimated
+            </span>
+          </div>
+        ) : (
+          <span className="panel-meta">{points.length} models</span>
+        )}
+      </div>
+      <div className="scatter-chart-wrap">
+        {points.length === 0 ? (
+          <div className="empty-state">No plottable models.</div>
+        ) : (
+          <svg className="scatter-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={title}>
+            {yTicks.map((tick) => {
+              const y = top + chartHeight - (tick / 100) * chartHeight;
+              return (
+                <g key={`y-${tick}`}>
+                  <line className="chart-grid-line" x1={left} x2={width - right} y1={y} y2={y} />
+                  <text className="chart-tick" x={left - 10} y={y + 4} textAnchor="end">
+                    {formatChartPercent(tick)}
+                  </text>
+                </g>
+              );
+            })}
+            {xTicks.map((tick) => {
+              const x = left + ((tick - xMin) / xSpan) * chartWidth;
+              return (
+                <g key={`x-${tick}`}>
+                  <line className="chart-grid-line vertical" x1={x} x2={x} y1={top} y2={height - bottom} />
+                  <text className="chart-tick" x={x} y={height - bottom + 22} textAnchor="middle">
+                    {formatXTick(tick)}
+                  </text>
+                </g>
+              );
+            })}
+            <line className="chart-axis-line" x1={left} x2={width - right} y1={height - bottom} y2={height - bottom} />
+            <line className="chart-axis-line" x1={left} x2={left} y1={top} y2={height - bottom} />
+            <text className="chart-axis-label" x={left + chartWidth / 2} y={height - 12} textAnchor="middle">
+              {xLabel}
+            </text>
+            <text
+              className="chart-axis-label"
+              x={-(top + chartHeight / 2)}
+              y={16}
+              textAnchor="middle"
+              transform="rotate(-90)"
+            >
+              {yLabel}
+            </text>
+            {points.map((point) => {
+              const x = left + ((point.x - xMin) / xSpan) * chartWidth;
+              const y = top + chartHeight - (point.y / 100) * chartHeight;
+              const sourceClass = point.source === "estimated" ? "estimated" : "recorded";
+
+              return (
+                <g className="scatter-point-group" key={point.id}>
+                  <circle className={`scatter-point ${sourceClass}`} cx={x} cy={y} r="6.5">
+                    <title>
+                      {point.label}: {formatXValue(point)}; score {formatChartPercent(point.y)}
+                    </title>
+                  </circle>
+                </g>
+              );
+            })}
+          </svg>
+        )}
+        <div className="chart-point-list" aria-label={`${title} models`}>
+          {points.map((point) => {
+            const sourceClass = point.source === "estimated" ? "estimated" : "recorded";
+            return (
+              <span key={`${point.id}-key`}>
+                <i className={`chart-swatch ${sourceClass}`} aria-hidden="true" />
+                {point.label}
+              </span>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function ModelQuestionDetail({
   model,
   questionId,
@@ -325,6 +494,62 @@ function sortModels(models: ModelResult[], sortKey: SortKey): ModelResult[] {
   });
 }
 
+function buildReleaseDateChartPoints(models: ModelResult[]): ChartPoint[] {
+  return models
+    .map((model): ChartPoint | null => {
+      const score = model.summary.evaluatedWeightedPercent;
+      const timestamp = dateToTimestamp(model.metadata.releaseDate);
+      if (score === null || timestamp === null) {
+        return null;
+      }
+      return {
+        id: `${model.id}-release`,
+        label: model.metadata.modelName,
+        x: timestamp,
+        y: score,
+        xText: formatFullDate(timestamp)
+      };
+    })
+    .filter((point): point is ChartPoint => point !== null)
+    .sort((a, b) => a.x - b.x || b.y - a.y);
+}
+
+function buildCostChartPoints(models: ModelResult[]): ChartPoint[] {
+  return models
+    .map((model): ChartPoint | null => {
+      const score = model.summary.evaluatedWeightedPercent;
+      const dollars = model.summary.totalDollars;
+      if (score === null || dollars === null || model.summary.totalDollarsSource === "blank") {
+        return null;
+      }
+      return {
+        id: `${model.id}-cost`,
+        label: model.metadata.modelName,
+        x: dollars,
+        y: score,
+        xText: formatDollars(dollars, model.summary.totalDollarsSource),
+        source: model.summary.totalDollarsSource
+      };
+    })
+    .filter((point): point is ChartPoint => point !== null)
+    .sort((a, b) => a.x - b.x || b.y - a.y);
+}
+
+function buildChartTicks(min: number, max: number, count: number): number[] {
+  if (count <= 1 || min === max) {
+    return [min];
+  }
+  return Array.from({ length: count }, (_, index) => min + ((max - min) / (count - 1)) * index);
+}
+
+function dateToTimestamp(date: string | undefined): number | null {
+  if (!date) {
+    return null;
+  }
+  const timestamp = Date.parse(`${date}T00:00:00Z`);
+  return Number.isFinite(timestamp) ? timestamp : null;
+}
+
 function statusClass(status: ResultStatus): string {
   return status === "not_evaluated" ? "not-run" : status;
 }
@@ -348,6 +573,27 @@ function statusSymbol(status: ResultStatus): string {
 
 function formatNullablePercent(value: number | null): string {
   return value === null ? "n/a" : `${value}%`;
+}
+
+function formatChartPercent(value: number): string {
+  return `${value.toFixed(Number.isInteger(value) ? 0 : 1)}%`;
+}
+
+function formatChartDollars(value: number): string {
+  if (value >= 10) {
+    return `$${value.toFixed(0)}`;
+  }
+  return `$${value.toFixed(value === 0 ? 0 : 2)}`;
+}
+
+function formatShortDate(value: number): string {
+  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(value));
+}
+
+function formatFullDate(value: number): string {
+  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }).format(
+    new Date(value)
+  );
 }
 
 function formatSeconds(value: number | null): string {
