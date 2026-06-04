@@ -871,7 +871,7 @@ h3 {
 
 .scatter-chart {
   width: 100%;
-  min-width: 520px;
+  min-width: 680px;
   display: block;
 }
 
@@ -924,6 +924,30 @@ h3 {
   stroke-dasharray: 3 2;
 }
 
+.chart-label-line {
+  stroke: var(--line-strong);
+  stroke-width: 1;
+  opacity: 0.72;
+}
+
+.chart-label-line.estimated {
+  stroke: var(--warn);
+  stroke-dasharray: 3 3;
+}
+
+.chart-label-text {
+  fill: var(--ink);
+  font-size: 0.72rem;
+  font-weight: 850;
+  paint-order: stroke;
+  stroke: var(--surface);
+  stroke-width: 3px;
+}
+
+.chart-label-text.estimated {
+  fill: var(--warn);
+}
+
 .chart-legend {
   display: flex;
   align-items: center;
@@ -955,25 +979,6 @@ h3 {
 .chart-swatch.estimated {
   border: 1px dashed var(--ink);
   background: var(--warn);
-}
-
-.chart-point-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px 12px;
-  padding: 0 4px 2px;
-  color: var(--muted);
-  font-size: 0.76rem;
-  font-weight: 760;
-  line-height: 1.25;
-}
-
-.chart-point-list span {
-  max-width: 210px;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  overflow-wrap: anywhere;
 }
 
 .compact-field {

@@ -30,6 +30,14 @@ interface ChartPoint {
   source?: MetricSource;
 }
 
+interface ChartPointLayout extends ChartPoint {
+  pointX: number;
+  pointY: number;
+  labelX: number;
+  labelY: number;
+  displayLabel: string;
+}
+
 export function ResultsApp() {
   const [selectedQuestionId, setSelectedQuestionId] = useState<QuestionId>("q3");
   const [selectedModelId, setSelectedModelId] = useState("all");
@@ -305,10 +313,10 @@ function ScatterChart({
   showSourceLegend?: boolean;
   xStartsAtZero?: boolean;
 }) {
-  const width = 680;
+  const width = 760;
   const height = 340;
   const top = 28;
-  const right = 28;
+  const right = 190;
   const bottom = 58;
   const left = 58;
   const chartWidth = width - left - right;
@@ -322,6 +330,18 @@ function ScatterChart({
   const xSpan = xMax - xMin || 1;
   const xTicks = buildChartTicks(xMin, xMax, 3);
   const yTicks = [0, 25, 50, 75, 100];
+  const plotRight = width - right;
+  const pointLayouts = buildChartPointLayouts(points, {
+    xMin,
+    xSpan,
+    left,
+    top,
+    chartWidth,
+    chartHeight,
+    labelX: plotRight + 24,
+    minLabelY: top + 14,
+    maxLabelY: height - bottom - 8
+  });
 
   return (
     <section className="panel results-chart-panel">
@@ -386,34 +406,31 @@ function ScatterChart({
             >
               {yLabel}
             </text>
-            {points.map((point) => {
-              const x = left + ((point.x - xMin) / xSpan) * chartWidth;
-              const y = top + chartHeight - (point.y / 100) * chartHeight;
+            {pointLayouts.map((point) => {
               const sourceClass = point.source === "estimated" ? "estimated" : "recorded";
 
               return (
                 <g className="scatter-point-group" key={point.id}>
-                  <circle className={`scatter-point ${sourceClass}`} cx={x} cy={y} r="6.5">
+                  <line
+                    className={`chart-label-line ${sourceClass}`}
+                    x1={point.pointX + 8}
+                    x2={point.labelX - 9}
+                    y1={point.pointY}
+                    y2={point.labelY - 4}
+                  />
+                  <circle className={`scatter-point ${sourceClass}`} cx={point.pointX} cy={point.pointY} r="6.5">
                     <title>
                       {point.label}: {formatXValue(point)}; score {formatChartPercent(point.y)}
                     </title>
                   </circle>
+                  <text className={`chart-label-text ${sourceClass}`} x={point.labelX} y={point.labelY}>
+                    {point.displayLabel}
+                  </text>
                 </g>
               );
             })}
           </svg>
         )}
-        <div className="chart-point-list" aria-label={`${title} models`}>
-          {points.map((point) => {
-            const sourceClass = point.source === "estimated" ? "estimated" : "recorded";
-            return (
-              <span key={`${point.id}-key`}>
-                <i className={`chart-swatch ${sourceClass}`} aria-hidden="true" />
-                {point.label}
-              </span>
-            );
-          })}
-        </div>
       </div>
     </section>
   );
@@ -540,6 +557,81 @@ function buildChartTicks(min: number, max: number, count: number): number[] {
     return [min];
   }
   return Array.from({ length: count }, (_, index) => min + ((max - min) / (count - 1)) * index);
+}
+
+function buildChartPointLayouts(
+  points: ChartPoint[],
+  dimensions: {
+    xMin: number;
+    xSpan: number;
+    left: number;
+    top: number;
+    chartWidth: number;
+    chartHeight: number;
+    labelX: number;
+    minLabelY: number;
+    maxLabelY: number;
+  }
+): ChartPointLayout[] {
+  const minGap = 23;
+  const layouts = points
+    .map((point) => ({
+      ...point,
+      pointX: dimensions.left + ((point.x - dimensions.xMin) / dimensions.xSpan) * dimensions.chartWidth,
+      pointY: dimensions.top + dimensions.chartHeight - (point.y / 100) * dimensions.chartHeight,
+      labelX: dimensions.labelX,
+      labelY: dimensions.top,
+      displayLabel: chartModelLabel(point.label)
+    }))
+    .sort((a, b) => a.pointY - b.pointY || a.pointX - b.pointX);
+
+  let nextLabelY = dimensions.minLabelY;
+  for (const layout of layouts) {
+    layout.labelY = Math.max(layout.pointY + 4, nextLabelY);
+    nextLabelY = layout.labelY + minGap;
+  }
+
+  const overflow = layouts.length === 0 ? 0 : layouts[layouts.length - 1].labelY - dimensions.maxLabelY;
+  if (overflow > 0) {
+    for (const layout of layouts) {
+      layout.labelY -= overflow;
+    }
+  }
+
+  const underflow = layouts.length === 0 ? 0 : dimensions.minLabelY - layouts[0].labelY;
+  if (underflow > 0) {
+    for (const layout of layouts) {
+      layout.labelY += underflow;
+    }
+  }
+
+  return layouts;
+}
+
+function chartModelLabel(value: string): string {
+  const normalized = value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  if (normalized.includes("claude opus 4 8")) {
+    return "Claude Opus 4.8";
+  }
+  if (normalized.includes("gemini 3 5 flash")) {
+    return "Gemini 3.5 Flash";
+  }
+  if (normalized.includes("gemini 3 1 pro")) {
+    return "Gemini 3.1 Pro";
+  }
+  if (normalized.includes("chatgpt 5 5") || normalized.includes("gpt 5 5")) {
+    return "ChatGPT 5.5 ET";
+  }
+  if (normalized.includes("deepseek v4 pro")) {
+    return "DeepSeek V4 Pro";
+  }
+  if (normalized.includes("grok 4 3 beta")) {
+    return "Grok 4.3 Beta";
+  }
+  if (normalized.includes("gpt 5 4 mini")) {
+    return "GPT-5.4 Mini";
+  }
+  return value.length <= 18 ? value : `${value.slice(0, 15)}...`;
 }
 
 function dateToTimestamp(date: string | undefined): number | null {
