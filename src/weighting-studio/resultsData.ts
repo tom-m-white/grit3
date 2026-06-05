@@ -58,8 +58,8 @@ const MODEL_ESTIMATE_CONFIGS: ModelEstimateConfig[] = [
     aliases: ["chatgpt 5 4 extended thinking", "chatgpt 5 4 et", "gpt 5 4 extended thinking", "gpt 5 4 et"],
     inputTokenMultiplier: 5.89,
     outputTokensPerSecond: 176.62,
-    inputPricePerMillion: 5,
-    outputPricePerMillion: 30
+    inputPricePerMillion: 2.5,
+    outputPricePerMillion: 15
   },
   {
     aliases: ["chatgpt 5 5", "gpt 5 5"],

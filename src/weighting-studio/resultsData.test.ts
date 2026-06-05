@@ -156,11 +156,11 @@ describe("results data", () => {
 
     expect(model.results.q3.effectiveTokens).toBe(2355);
     expect(model.results.q3.tokensSource).toBe("estimated");
-    expect(model.results.q3.effectiveDollars).toBeCloseTo(0.055925, 6);
+    expect(model.results.q3.effectiveDollars).toBeCloseTo(0.027963, 6);
     expect(model.results.q3.dollarsSource).toBe("estimated");
     expect(model.summary.totalTokens).toBe(2355);
     expect(model.summary.totalTokensSource).toBe("estimated");
-    expect(model.summary.totalDollars).toBe(0.0559);
+    expect(model.summary.totalDollars).toBe(0.028);
     expect(model.summary.totalDollarsSource).toBe("estimated");
   });
 
