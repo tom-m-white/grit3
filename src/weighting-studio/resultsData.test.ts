@@ -145,6 +145,25 @@ describe("results data", () => {
     expect(model.summary.totalDollarsSource).toBe("estimated");
   });
 
+  it("estimates missing ChatGPT 5.4 ET cost and total tokens from prompt and runtime", () => {
+    const model = parseModelCsv(
+      "chatgpt.csv",
+      singleResultCsv({ modelName: "chatgpt 5.4 ET" }),
+      testProfile(),
+      {},
+      { q3: 400 }
+    );
+
+    expect(model.results.q3.effectiveTokens).toBe(2355);
+    expect(model.results.q3.tokensSource).toBe("estimated");
+    expect(model.results.q3.effectiveDollars).toBeCloseTo(0.055925, 6);
+    expect(model.results.q3.dollarsSource).toBe("estimated");
+    expect(model.summary.totalTokens).toBe(2355);
+    expect(model.summary.totalTokensSource).toBe("estimated");
+    expect(model.summary.totalDollars).toBe(0.0559);
+    expect(model.summary.totalDollarsSource).toBe("estimated");
+  });
+
   it("attaches release dates from model name aliases", () => {
     const cases = [
       ["Claude Opus 4.8", "2026-05-28"],
@@ -154,6 +173,7 @@ describe("results data", () => {
       ["chatgpt 5.5 Extended thinking", "2026-04-23"],
       ["deepseek v4 pro", "2026-04-24"],
       ["grok_4.3_beta", "2026-04-17"],
+      ["chatgpt 5.4 ET", "2026-03-17"],
       ["GPT-5.4 mini high flex", "2026-03-17"]
     ];
 

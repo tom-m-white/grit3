@@ -633,6 +633,14 @@ function chartModelLabel(value: string): string {
   if (normalized.includes("chatgpt 5 5") || normalized.includes("gpt 5 5")) {
     return "ChatGPT 5.5 ET";
   }
+  if (
+    normalized.includes("chatgpt 5 4 et") ||
+    normalized.includes("chatgpt 5 4 extended thinking") ||
+    normalized.includes("gpt 5 4 et") ||
+    normalized.includes("gpt 5 4 extended thinking")
+  ) {
+    return "ChatGPT 5.4 ET";
+  }
   if (normalized.includes("deepseek v4 pro")) {
     return "DeepSeek V4 Pro";
   }

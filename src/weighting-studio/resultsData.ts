@@ -55,6 +55,13 @@ const SYSTEM_PROMPT =
 
 const MODEL_ESTIMATE_CONFIGS: ModelEstimateConfig[] = [
   {
+    aliases: ["chatgpt 5 4 extended thinking", "chatgpt 5 4 et", "gpt 5 4 extended thinking", "gpt 5 4 et"],
+    inputTokenMultiplier: 5.89,
+    outputTokensPerSecond: 176.62,
+    inputPricePerMillion: 5,
+    outputPricePerMillion: 30
+  },
+  {
     aliases: ["chatgpt 5 5", "gpt 5 5"],
     inputTokenMultiplier: 5.89,
     outputTokensPerSecond: 176.62,
@@ -93,6 +100,10 @@ const MODEL_RELEASE_DATE_CONFIGS: ModelReleaseDateConfig[] = [
   {
     aliases: ["grok 4 3 beta"],
     releaseDate: "2026-04-17"
+  },
+  {
+    aliases: ["chatgpt 5 4 extended thinking", "chatgpt 5 4 et", "gpt 5 4 extended thinking", "gpt 5 4 et"],
+    releaseDate: "2026-03-17"
   },
   {
     aliases: ["gpt 5 4 mini high flex"],
