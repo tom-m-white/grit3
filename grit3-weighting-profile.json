@@ -322,12 +322,12 @@
       },
       "computed_average": 3.43,
       "suggested_weight_bucket": 2.5,
-      "manual_weight_override": 4.5,
-      "final_weight": 4.5,
+      "manual_weight_override": 4,
+      "final_weight": 4,
       "tags": [],
       "notes": "",
       "difficulty_rationale": "",
-      "updated_at": "2026-06-06T11:39:53.689Z"
+      "updated_at": "2026-06-06T12:31:19.482Z"
     },
     "q19": {
       "question_id": "q19",
