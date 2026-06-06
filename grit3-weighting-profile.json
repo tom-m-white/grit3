@@ -38,14 +38,14 @@
       },
       "computed_average": 2,
       "suggested_weight_bucket": 1,
-      "manual_weight_override": null,
-      "final_weight": 1,
+      "manual_weight_override": 1.5,
+      "final_weight": 1.5,
       "tags": [
         "object-motion"
       ],
       "notes": "",
       "difficulty_rationale": "- object wall collision detection",
-      "updated_at": "2026-06-06T01:02:32.184Z"
+      "updated_at": "2026-06-06T11:32:31.229Z"
     },
     "q5": {
       "question_id": "q5",
@@ -60,12 +60,12 @@
       },
       "computed_average": 2.43,
       "suggested_weight_bucket": 1.5,
-      "manual_weight_override": null,
-      "final_weight": 1.5,
+      "manual_weight_override": 2.5,
+      "final_weight": 2.5,
       "tags": [],
       "notes": "",
       "difficulty_rationale": "",
-      "updated_at": "2026-06-06T01:06:26.854Z"
+      "updated_at": "2026-06-06T11:31:07.438Z"
     },
     "q6": {
       "question_id": "q6",
@@ -75,10 +75,10 @@
         "transformation_depth": 3,
         "distractors": 1,
         "output_precision": 2,
-        "rule_ambiguity": 4,
+        "rule_ambiguity": 3,
         "compositionality": 3
       },
-      "computed_average": 2.43,
+      "computed_average": 2.29,
       "suggested_weight_bucket": 1.5,
       "manual_weight_override": null,
       "final_weight": 1.5,
@@ -87,7 +87,7 @@
       ],
       "notes": "",
       "difficulty_rationale": "",
-      "updated_at": "2026-06-01T23:32:32.189Z"
+      "updated_at": "2026-06-06T11:33:22.487Z"
     },
     "q7": {
       "question_id": "q7",
@@ -102,12 +102,12 @@
       },
       "computed_average": 2.29,
       "suggested_weight_bucket": 1.5,
-      "manual_weight_override": null,
-      "final_weight": 1.5,
+      "manual_weight_override": 2.5,
+      "final_weight": 2.5,
       "tags": [],
       "notes": "",
       "difficulty_rationale": "",
-      "updated_at": "2026-06-06T01:04:24.952Z"
+      "updated_at": "2026-06-06T11:33:49.669Z"
     },
     "q8": {
       "question_id": "q8",
@@ -142,12 +142,12 @@
       },
       "computed_average": 4.43,
       "suggested_weight_bucket": 3.5,
-      "manual_weight_override": 5,
-      "final_weight": 5,
+      "manual_weight_override": 5.5,
+      "final_weight": 5.5,
       "tags": [],
       "notes": "",
       "difficulty_rationale": "",
-      "updated_at": "2026-06-06T01:05:37.675Z"
+      "updated_at": "2026-06-06T11:31:48.513Z"
     },
     "q10": {
       "question_id": "q10",
@@ -162,12 +162,12 @@
       },
       "computed_average": 1.86,
       "suggested_weight_bucket": 1,
-      "manual_weight_override": null,
-      "final_weight": 1,
+      "manual_weight_override": 2,
+      "final_weight": 2,
       "tags": [],
       "notes": "",
       "difficulty_rationale": "",
-      "updated_at": "2026-05-21T19:40:38.902Z"
+      "updated_at": "2026-06-06T11:34:53.220Z"
     },
     "q11": {
       "question_id": "q11",
@@ -262,12 +262,12 @@
       },
       "computed_average": 2.14,
       "suggested_weight_bucket": 1.5,
-      "manual_weight_override": null,
-      "final_weight": 1.5,
+      "manual_weight_override": 2,
+      "final_weight": 2,
       "tags": [],
       "notes": "",
       "difficulty_rationale": "",
-      "updated_at": "2026-05-21T19:53:23.169Z"
+      "updated_at": "2026-06-06T11:38:40.610Z"
     },
     "q16": {
       "question_id": "q16",
@@ -307,7 +307,7 @@
       "tags": [],
       "notes": "",
       "difficulty_rationale": "",
-      "updated_at": "2026-06-06T01:08:42.210Z"
+      "updated_at": "2026-06-06T11:39:41.041Z"
     },
     "q18": {
       "question_id": "q18",
@@ -322,12 +322,12 @@
       },
       "computed_average": 3.43,
       "suggested_weight_bucket": 2.5,
-      "manual_weight_override": 4,
-      "final_weight": 4,
+      "manual_weight_override": 4.5,
+      "final_weight": 4.5,
       "tags": [],
       "notes": "",
       "difficulty_rationale": "",
-      "updated_at": "2026-06-06T01:08:56.546Z"
+      "updated_at": "2026-06-06T11:39:53.689Z"
     },
     "q19": {
       "question_id": "q19",
@@ -342,12 +342,12 @@
       },
       "computed_average": 2.29,
       "suggested_weight_bucket": 1.5,
-      "manual_weight_override": 3,
-      "final_weight": 3,
+      "manual_weight_override": 3.5,
+      "final_weight": 3.5,
       "tags": [],
       "notes": "",
       "difficulty_rationale": "",
-      "updated_at": "2026-06-06T01:09:11.923Z"
+      "updated_at": "2026-06-06T11:40:05.192Z"
     },
     "q20": {
       "question_id": "q20",
@@ -362,12 +362,12 @@
       },
       "computed_average": 2.86,
       "suggested_weight_bucket": 2,
-      "manual_weight_override": 3,
-      "final_weight": 3,
+      "manual_weight_override": 3.5,
+      "final_weight": 3.5,
       "tags": [],
       "notes": "",
       "difficulty_rationale": "",
-      "updated_at": "2026-06-06T01:09:31.431Z"
+      "updated_at": "2026-06-06T11:40:25.453Z"
     },
     "q21": {
       "question_id": "q21",
@@ -382,12 +382,12 @@
       },
       "computed_average": 1.86,
       "suggested_weight_bucket": 1,
-      "manual_weight_override": null,
-      "final_weight": 1,
+      "manual_weight_override": 2,
+      "final_weight": 2,
       "tags": [],
       "notes": "",
       "difficulty_rationale": "",
-      "updated_at": "2026-05-31T04:24:00.571Z"
+      "updated_at": "2026-06-06T11:40:36.532Z"
     },
     "q22": {
       "question_id": "q22",
@@ -402,12 +402,12 @@
       },
       "computed_average": 2.43,
       "suggested_weight_bucket": 1.5,
-      "manual_weight_override": null,
-      "final_weight": 1.5,
+      "manual_weight_override": 2,
+      "final_weight": 2,
       "tags": [],
       "notes": "",
       "difficulty_rationale": "",
-      "updated_at": "2026-05-31T04:24:34.215Z"
+      "updated_at": "2026-06-06T11:41:00.858Z"
     },
     "q23": {
       "question_id": "q23",
@@ -442,12 +442,12 @@
       },
       "computed_average": 2.14,
       "suggested_weight_bucket": 1.5,
-      "manual_weight_override": null,
-      "final_weight": 1.5,
+      "manual_weight_override": 3.5,
+      "final_weight": 3.5,
       "tags": [],
       "notes": "",
       "difficulty_rationale": "",
-      "updated_at": "2026-05-21T20:06:25.128Z"
+      "updated_at": "2026-06-06T11:41:24.839Z"
     },
     "q25": {
       "question_id": "q25",
@@ -462,12 +462,12 @@
       },
       "computed_average": 2,
       "suggested_weight_bucket": 1,
-      "manual_weight_override": 2,
-      "final_weight": 2,
+      "manual_weight_override": 3,
+      "final_weight": 3,
       "tags": [],
       "notes": "",
       "difficulty_rationale": "",
-      "updated_at": "2026-05-21T20:07:39.499Z"
+      "updated_at": "2026-06-06T11:41:57.677Z"
     },
     "q26": {
       "question_id": "q26",
@@ -482,12 +482,12 @@
       },
       "computed_average": 3.71,
       "suggested_weight_bucket": 3,
-      "manual_weight_override": null,
-      "final_weight": 3,
+      "manual_weight_override": 3.5,
+      "final_weight": 3.5,
       "tags": [],
       "notes": "",
       "difficulty_rationale": "",
-      "updated_at": "2026-05-21T20:10:11.676Z"
+      "updated_at": "2026-06-06T11:42:20.117Z"
     },
     "q27": {
       "question_id": "q27",
@@ -502,12 +502,12 @@
       },
       "computed_average": 3.43,
       "suggested_weight_bucket": 2.5,
-      "manual_weight_override": null,
-      "final_weight": 2.5,
+      "manual_weight_override": 3,
+      "final_weight": 3,
       "tags": [],
       "notes": "",
       "difficulty_rationale": "",
-      "updated_at": "2026-06-06T01:14:21.966Z"
+      "updated_at": "2026-06-06T11:42:28.236Z"
     }
   }
 }
