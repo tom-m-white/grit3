@@ -225,7 +225,7 @@ function validateManualOverride(input: unknown, questionId: QuestionId): Weight 
     return null;
   }
   if (!isWeight(input)) {
-    throw new Error(`Question ${questionId} manual_weight_override must be null or an integer from 1 to 5.`);
+    throw new Error(`Question ${questionId} manual_weight_override must be null or a half-step number from 0.5 to 5.5.`);
   }
   return input;
 }

@@ -4,6 +4,7 @@ import { GridPanel } from "./GridPanel";
 import { loadQuestions } from "./questionLoader";
 import { QUESTION_IDS, RATING_OPTIONS, RUBRIC_FACTORS } from "./rubric";
 import { recalculateProfileEntry } from "./scoring";
+import { WEIGHT_OPTIONS } from "./types";
 import {
   createDefaultProfile,
   isComplete,
@@ -41,7 +42,7 @@ export function App() {
           (completedEntries.reduce((sum, entry) => sum + entry.computed_average, 0) / completedEntries.length) * 100
         ) / 100;
   const totalWeightedPoints = entries.reduce((sum, entry) => sum + entry.final_weight, 0);
-  const weightDistribution = [1, 2, 3, 4, 5].map((weight) => ({
+  const weightDistribution = WEIGHT_OPTIONS.map((weight) => ({
     weight,
     count: entries.filter((entry) => entry.final_weight === weight).length
   }));
@@ -359,11 +360,11 @@ function RubricEditor({
         <span>Manual weight override</span>
         <select value={entry.manual_weight_override ?? ""} onChange={(event) => onManualOverrideChange(event.target.value)}>
           <option value="">Use suggested bucket</option>
-          <option value="1">1</option>
-          <option value="2">2</option>
-          <option value="3">3</option>
-          <option value="4">4</option>
-          <option value="5">5</option>
+          {WEIGHT_OPTIONS.map((weight) => (
+            <option value={weight} key={weight}>
+              {weight}
+            </option>
+          ))}
         </select>
       </label>
 

@@ -50,7 +50,7 @@ create table if not exists public.benchmark_question_records (
   run_id uuid not null references public.benchmark_runs(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
   question_id text not null,
-  weight integer not null default 1 check (weight between 1 and 5),
+  weight numeric(3,1) not null default 1 check (weight between 0.5 and 5.5 and weight * 2 = floor(weight * 2)),
   status text not null default 'not_started' check (status in ('not_started', 'in_progress', 'correct', 'wrong')),
   final_correct boolean,
   first_submission_correct boolean,
@@ -63,6 +63,17 @@ create table if not exists public.benchmark_question_records (
   updated_at timestamptz not null default now(),
   unique (run_id, question_id)
 );
+
+alter table public.benchmark_question_records
+  drop constraint if exists benchmark_question_records_weight_check;
+
+alter table public.benchmark_question_records
+  alter column weight type numeric(3,1) using weight::numeric,
+  alter column weight set default 1;
+
+alter table public.benchmark_question_records
+  add constraint benchmark_question_records_weight_check
+  check (weight between 0.5 and 5.5 and weight * 2 = floor(weight * 2));
 
 create table if not exists public.human_submissions (
   id uuid primary key default gen_random_uuid(),
@@ -93,15 +104,18 @@ create table if not exists public.created_questions (
   updated_at timestamptz not null default now()
 );
 
+drop function if exists public.search_public_profiles(text);
+drop function if exists public.get_public_profile(text);
+
 create or replace function public.search_public_profiles(query_text text)
 returns table (
   username text,
   role text,
   completed_run_count integer,
-  best_correct_weight integer,
-  best_total_weight integer,
-  latest_correct_weight integer,
-  latest_total_weight integer,
+  best_correct_weight numeric,
+  best_total_weight numeric,
+  latest_correct_weight numeric,
+  latest_total_weight numeric,
   created_draft_count integer,
   created_submitted_count integer,
   created_needs_changes_count integer,
@@ -135,8 +149,8 @@ as $$
       br.user_id,
       br.id,
       br.completed_at,
-      coalesce(sum(case when bqr.final_correct is true then bqr.weight else 0 end), 0)::integer as correct_weight,
-      coalesce(sum(bqr.weight), 0)::integer as total_weight
+      coalesce(sum(case when bqr.final_correct is true then bqr.weight else 0 end), 0)::numeric as correct_weight,
+      coalesce(sum(bqr.weight), 0)::numeric as total_weight
     from public.benchmark_runs br
     join public.benchmark_question_records bqr on bqr.run_id = br.id
     where br.status = 'completed'
@@ -183,10 +197,10 @@ as $$
     m.username,
     m.role,
     coalesce(rc.completed_run_count, 0)::integer,
-    coalesce(bs.best_correct_weight, 0)::integer,
-    coalesce(bs.best_total_weight, 0)::integer,
-    coalesce(ls.latest_correct_weight, 0)::integer,
-    coalesce(ls.latest_total_weight, 0)::integer,
+    coalesce(bs.best_correct_weight, 0)::numeric,
+    coalesce(bs.best_total_weight, 0)::numeric,
+    coalesce(ls.latest_correct_weight, 0)::numeric,
+    coalesce(ls.latest_total_weight, 0)::numeric,
     coalesce(cc.created_draft_count, 0)::integer,
     coalesce(cc.created_submitted_count, 0)::integer,
     coalesce(cc.created_needs_changes_count, 0)::integer,
@@ -204,10 +218,10 @@ returns table (
   username text,
   role text,
   completed_run_count integer,
-  best_correct_weight integer,
-  best_total_weight integer,
-  latest_correct_weight integer,
-  latest_total_weight integer,
+  best_correct_weight numeric,
+  best_total_weight numeric,
+  latest_correct_weight numeric,
+  latest_total_weight numeric,
   created_draft_count integer,
   created_submitted_count integer,
   created_needs_changes_count integer,
@@ -231,8 +245,8 @@ as $$
       br.user_id,
       br.id,
       br.completed_at,
-      coalesce(sum(case when bqr.final_correct is true then bqr.weight else 0 end), 0)::integer as correct_weight,
-      coalesce(sum(bqr.weight), 0)::integer as total_weight
+      coalesce(sum(case when bqr.final_correct is true then bqr.weight else 0 end), 0)::numeric as correct_weight,
+      coalesce(sum(bqr.weight), 0)::numeric as total_weight
     from public.benchmark_runs br
     join public.benchmark_question_records bqr on bqr.run_id = br.id
     where br.status = 'completed'
@@ -279,10 +293,10 @@ as $$
     t.username,
     t.role,
     coalesce(rc.completed_run_count, 0)::integer,
-    coalesce(bs.best_correct_weight, 0)::integer,
-    coalesce(bs.best_total_weight, 0)::integer,
-    coalesce(ls.latest_correct_weight, 0)::integer,
-    coalesce(ls.latest_total_weight, 0)::integer,
+    coalesce(bs.best_correct_weight, 0)::numeric,
+    coalesce(bs.best_total_weight, 0)::numeric,
+    coalesce(ls.latest_correct_weight, 0)::numeric,
+    coalesce(ls.latest_total_weight, 0)::numeric,
     coalesce(cc.created_draft_count, 0)::integer,
     coalesce(cc.created_submitted_count, 0)::integer,
     coalesce(cc.created_needs_changes_count, 0)::integer,

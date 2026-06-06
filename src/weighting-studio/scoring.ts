@@ -1,4 +1,4 @@
-import { RUBRIC_KEYS } from "./types";
+import { RUBRIC_KEYS, WEIGHT_OPTIONS } from "./types";
 import type {
   QuestionProfile,
   Rating,
@@ -13,16 +13,7 @@ export function computeAverage(ratings: RubricRatings): number {
 }
 
 export function suggestedWeightBucket(computedAverage: number): SuggestedWeight {
-  if (computedAverage <= 2) {
-    return 1;
-  }
-  if (computedAverage <= 3) {
-    return 2;
-  }
-  if (computedAverage <= 4) {
-    return 3;
-  }
-  return 4;
+  return clampWeight(Math.ceil((computedAverage - 1) * 2) / 2);
 }
 
 export function finalWeight(suggested: SuggestedWeight, manualOverride: Weight | null): Weight {
@@ -45,9 +36,14 @@ export function isRating(value: unknown): value is Rating {
 }
 
 export function isWeight(value: unknown): value is Weight {
-  return typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 5;
+  return typeof value === "number" && WEIGHT_OPTIONS.includes(value as Weight);
 }
 
 function roundToTwo(value: number): number {
   return Math.round(value * 100) / 100;
+}
+
+function clampWeight(value: number): Weight {
+  const bounded = Math.max(WEIGHT_OPTIONS[0], Math.min(WEIGHT_OPTIONS[WEIGHT_OPTIONS.length - 1], value));
+  return bounded as Weight;
 }

@@ -59,9 +59,9 @@
         "compositionality": 2
       },
       "computed_average": 2.43,
-      "suggested_weight_bucket": 2,
+      "suggested_weight_bucket": 1.5,
       "manual_weight_override": null,
-      "final_weight": 2,
+      "final_weight": 1.5,
       "tags": [],
       "notes": "",
       "difficulty_rationale": "",
@@ -79,9 +79,9 @@
         "compositionality": 3
       },
       "computed_average": 2.43,
-      "suggested_weight_bucket": 2,
+      "suggested_weight_bucket": 1.5,
       "manual_weight_override": null,
-      "final_weight": 2,
+      "final_weight": 1.5,
       "tags": [
         "pattern"
       ],
@@ -101,9 +101,9 @@
         "compositionality": 3
       },
       "computed_average": 2.29,
-      "suggested_weight_bucket": 2,
+      "suggested_weight_bucket": 1.5,
       "manual_weight_override": null,
-      "final_weight": 2,
+      "final_weight": 1.5,
       "tags": [],
       "notes": "",
       "difficulty_rationale": "",
@@ -121,7 +121,7 @@
         "compositionality": 2
       },
       "computed_average": 3.14,
-      "suggested_weight_bucket": 3,
+      "suggested_weight_bucket": 2.5,
       "manual_weight_override": 4,
       "final_weight": 4,
       "tags": [],
@@ -141,7 +141,7 @@
         "compositionality": 4
       },
       "computed_average": 4.43,
-      "suggested_weight_bucket": 4,
+      "suggested_weight_bucket": 3.5,
       "manual_weight_override": 5,
       "final_weight": 5,
       "tags": [],
@@ -241,9 +241,9 @@
         "compositionality": 1
       },
       "computed_average": 1,
-      "suggested_weight_bucket": 1,
+      "suggested_weight_bucket": 0.5,
       "manual_weight_override": null,
-      "final_weight": 1,
+      "final_weight": 0.5,
       "tags": [],
       "notes": "",
       "difficulty_rationale": "",
@@ -261,9 +261,9 @@
         "compositionality": 2
       },
       "computed_average": 2.14,
-      "suggested_weight_bucket": 2,
+      "suggested_weight_bucket": 1.5,
       "manual_weight_override": null,
-      "final_weight": 2,
+      "final_weight": 1.5,
       "tags": [],
       "notes": "",
       "difficulty_rationale": "",
@@ -281,7 +281,7 @@
         "compositionality": 2
       },
       "computed_average": 2.43,
-      "suggested_weight_bucket": 2,
+      "suggested_weight_bucket": 1.5,
       "manual_weight_override": 3,
       "final_weight": 3,
       "tags": [],
@@ -321,7 +321,7 @@
         "compositionality": 3
       },
       "computed_average": 3.43,
-      "suggested_weight_bucket": 3,
+      "suggested_weight_bucket": 2.5,
       "manual_weight_override": 4,
       "final_weight": 4,
       "tags": [],
@@ -341,7 +341,7 @@
         "compositionality": 1
       },
       "computed_average": 2.29,
-      "suggested_weight_bucket": 2,
+      "suggested_weight_bucket": 1.5,
       "manual_weight_override": 3,
       "final_weight": 3,
       "tags": [],
@@ -401,9 +401,9 @@
         "compositionality": 3
       },
       "computed_average": 2.43,
-      "suggested_weight_bucket": 2,
+      "suggested_weight_bucket": 1.5,
       "manual_weight_override": null,
-      "final_weight": 2,
+      "final_weight": 1.5,
       "tags": [],
       "notes": "",
       "difficulty_rationale": "",
@@ -421,9 +421,9 @@
         "compositionality": 1
       },
       "computed_average": 1,
-      "suggested_weight_bucket": 1,
+      "suggested_weight_bucket": 0.5,
       "manual_weight_override": null,
-      "final_weight": 1,
+      "final_weight": 0.5,
       "tags": [],
       "notes": "",
       "difficulty_rationale": "",
@@ -441,9 +441,9 @@
         "compositionality": 2
       },
       "computed_average": 2.14,
-      "suggested_weight_bucket": 2,
+      "suggested_weight_bucket": 1.5,
       "manual_weight_override": null,
-      "final_weight": 2,
+      "final_weight": 1.5,
       "tags": [],
       "notes": "",
       "difficulty_rationale": "",
@@ -501,9 +501,9 @@
         "compositionality": 1
       },
       "computed_average": 3.43,
-      "suggested_weight_bucket": 3,
+      "suggested_weight_bucket": 2.5,
       "manual_weight_override": null,
-      "final_weight": 3,
+      "final_weight": 2.5,
       "tags": [],
       "notes": "",
       "difficulty_rationale": "",

@@ -11,7 +11,7 @@ describe("profile utilities", () => {
     expect(Object.keys(profile.questions)).toHaveLength(25);
     expect(profile.questions[q3].question_id).toBe("q3");
     expect(profile.questions[q3].computed_average).toBe(1);
-    expect(profile.questions[q3].final_weight).toBe(1);
+    expect(profile.questions[q3].final_weight).toBe(0.5);
     expect(profile.questions[q3].updated_at).toBe("");
   });
 
@@ -29,7 +29,7 @@ describe("profile utilities", () => {
           rule_ambiguity: 5,
           compositionality: 5
         },
-        manual_weight_override: 5
+        manual_weight_override: 5.5
       },
       "2026-05-21T12:00:00.000Z"
     );
@@ -38,7 +38,7 @@ describe("profile utilities", () => {
 
     expect(imported.questions[q3].computed_average).toBe(5);
     expect(imported.questions[q3].suggested_weight_bucket).toBe(4);
-    expect(imported.questions[q3].final_weight).toBe(5);
+    expect(imported.questions[q3].final_weight).toBe(5.5);
   });
 
   it("rejects invalid rating and question ids on import", () => {
@@ -49,6 +49,10 @@ describe("profile utilities", () => {
     const unknownQuestion = JSON.parse(JSON.stringify(createDefaultProfile()));
     unknownQuestion.questions.q28 = unknownQuestion.questions.q27;
     expect(() => validateImportedProfile(unknownQuestion)).toThrow(/unknown question id/);
+
+    const invalidOverride = JSON.parse(JSON.stringify(createDefaultProfile()));
+    invalidOverride.questions.q3.manual_weight_override = 1.25;
+    expect(() => validateImportedProfile(invalidOverride)).toThrow(/manual_weight_override/);
   });
 
   it("exports CSV with escaped text fields", () => {

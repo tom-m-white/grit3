@@ -154,9 +154,13 @@ Each question has seven rubric ratings from 1 to 5:
 
 `computed_average` is the rounded average of those seven values. Suggested weights map as follows:
 
-- `1.00-2.00` -> weight `1`
-- `>2.00-3.00` -> weight `2`
-- `>3.00-4.00` -> weight `3`
-- `>4.00-5.00` -> weight `4`
+- `1.00-1.50` -> weight `0.5`
+- `>1.50-2.00` -> weight `1`
+- `>2.00-2.50` -> weight `1.5`
+- `>2.50-3.00` -> weight `2`
+- `>3.00-3.50` -> weight `2.5`
+- `>3.50-4.00` -> weight `3`
+- `>4.00-4.50` -> weight `3.5`
+- `>4.50-5.00` -> weight `4`
 
-`final_weight` is the manual override when set; otherwise, it is the suggested bucket.
+`final_weight` is the manual override when set; otherwise, it is the suggested bucket. Manual overrides allow half-step weights from `0.5` through `5.5`.

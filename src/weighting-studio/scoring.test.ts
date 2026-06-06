@@ -26,18 +26,26 @@ describe("scoring", () => {
   });
 
   it("maps average boundaries to suggested buckets", () => {
-    expect(suggestedWeightBucket(1)).toBe(1);
+    expect(suggestedWeightBucket(1)).toBe(0.5);
+    expect(suggestedWeightBucket(1.5)).toBe(0.5);
+    expect(suggestedWeightBucket(1.51)).toBe(1);
     expect(suggestedWeightBucket(2)).toBe(1);
-    expect(suggestedWeightBucket(2.01)).toBe(2);
+    expect(suggestedWeightBucket(2.01)).toBe(1.5);
+    expect(suggestedWeightBucket(2.5)).toBe(1.5);
+    expect(suggestedWeightBucket(2.51)).toBe(2);
     expect(suggestedWeightBucket(3)).toBe(2);
-    expect(suggestedWeightBucket(3.01)).toBe(3);
+    expect(suggestedWeightBucket(3.01)).toBe(2.5);
+    expect(suggestedWeightBucket(3.5)).toBe(2.5);
+    expect(suggestedWeightBucket(3.51)).toBe(3);
     expect(suggestedWeightBucket(4)).toBe(3);
-    expect(suggestedWeightBucket(4.01)).toBe(4);
+    expect(suggestedWeightBucket(4.01)).toBe(3.5);
+    expect(suggestedWeightBucket(4.5)).toBe(3.5);
+    expect(suggestedWeightBucket(4.51)).toBe(4);
     expect(suggestedWeightBucket(5)).toBe(4);
   });
 
   it("uses a manual override as final weight when present", () => {
     expect(finalWeight(3, null)).toBe(3);
-    expect(finalWeight(3, 5)).toBe(5);
+    expect(finalWeight(3, 5.5)).toBe(5.5);
   });
 });

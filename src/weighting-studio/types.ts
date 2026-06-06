@@ -31,8 +31,9 @@ export const RUBRIC_KEYS = [
 
 export type RubricKey = (typeof RUBRIC_KEYS)[number];
 export type Rating = 1 | 2 | 3 | 4 | 5;
-export type Weight = 1 | 2 | 3 | 4 | 5;
-export type SuggestedWeight = 1 | 2 | 3 | 4;
+export const WEIGHT_OPTIONS = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5] as const;
+export type Weight = (typeof WEIGHT_OPTIONS)[number];
+export type SuggestedWeight = Weight;
 
 export type RubricRatings = Record<RubricKey, Rating>;
 
