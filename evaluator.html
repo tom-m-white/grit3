@@ -44,6 +44,7 @@
     }
 
     button,
+    select,
     textarea {
       font: inherit;
     }
@@ -239,6 +240,14 @@
       font-size: 0.98rem;
     }
 
+    .panel-tools {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
     .panel-meta {
       font-size: 0.8rem;
       white-space: nowrap;
@@ -250,21 +259,33 @@
       padding: 12px;
     }
 
+    .question-select,
     textarea {
       width: 100%;
-      min-height: 230px;
-      resize: vertical;
-      padding: 11px 12px;
       border: 1px solid var(--line);
       border-radius: 7px;
       background: var(--field-bg);
       color: var(--ink);
+    }
+
+    .question-select {
+      width: auto;
+      min-width: 150px;
+      min-height: 38px;
+      padding: 8px 10px;
+    }
+
+    textarea {
+      min-height: 230px;
+      resize: vertical;
+      padding: 11px 12px;
       font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
       font-size: 0.83rem;
       line-height: 1.45;
       tab-size: 2;
     }
 
+    .question-select:focus,
     textarea:focus {
       outline: 2px solid rgba(15, 118, 110, 0.2);
       border-color: var(--accent);
@@ -313,6 +334,15 @@
 
     .button.ghost {
       background: transparent;
+    }
+
+    .button:disabled,
+    .button:disabled:hover {
+      border-color: var(--line);
+      background: var(--button-bg);
+      color: var(--muted);
+      cursor: not-allowed;
+      opacity: 0.68;
     }
 
     .summary {
@@ -623,6 +653,16 @@
         text-align: left;
       }
 
+      .panel-header {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .panel-tools,
+      .question-select {
+        width: 100%;
+      }
+
       .workspace {
         padding: 12px;
       }
@@ -688,6 +728,13 @@
             <div class="panel-title">
               <strong>Task JSON</strong>
               <span class="muted">Requires train and test arrays with output answers.</span>
+            </div>
+            <div class="panel-tools" aria-label="Benchmark question tools">
+              <label class="sr-only" for="questionSelect">Select benchmark question</label>
+              <select id="questionSelect" class="question-select">
+                <option value="">Select question</option>
+              </select>
+              <button class="button ghost" id="copyPromptButton" type="button" disabled>Copy LLM Prompt</button>
             </div>
           </div>
           <div class="editor-wrap">
@@ -757,7 +804,9 @@
     </section>
   </main>
 
-  <script>
+  <script type="module">
+    import { loadQuestions } from "/src/weighting-studio/questionLoader.ts";
+
     (() => {
       "use strict";
 
@@ -776,8 +825,15 @@
 
       const allowedCodes = new Set(Object.keys(COLOR_MAP));
       const EVALUATOR_HANDOFF_KEY = "grit3.creator.evaluatorTask.v1";
+      const PROMPT_HEADER = 'Please give the proper output. Use a raw grid, {"output": grid}, or {"outputs": [grid]}';
+      const OUTPUT_PLACEHOLDER = "__GRIT3_PROMPT_OUTPUT_PLACEHOLDER__";
+      const loadedQuestions = loadQuestions();
+      const questionById = new Map();
+      let selectedQuestion = null;
 
       const dom = {
+        questionSelect: document.getElementById("questionSelect"),
+        copyPromptButton: document.getElementById("copyPromptButton"),
         taskJson: document.getElementById("taskJson"),
         predictionJson: document.getElementById("predictionJson"),
         evaluateButton: document.getElementById("evaluateButton"),
@@ -791,9 +847,75 @@
         testResults: document.getElementById("testResults")
       };
 
+      initializeQuestionSelector();
+      dom.questionSelect.addEventListener("change", handleQuestionSelect);
+      dom.copyPromptButton.addEventListener("click", copySelectedPrompt);
+      dom.taskJson.addEventListener("input", clearSelectedQuestion);
       dom.evaluateButton.addEventListener("click", evaluate);
       dom.clearButton.addEventListener("click", clearAll);
       loadCreatorHandoff();
+
+      function initializeQuestionSelector() {
+        loadedQuestions.forEach((question) => {
+          const option = document.createElement("option");
+          option.value = question.question_id;
+          option.textContent = question.question_id;
+
+          if (question.task) {
+            questionById.set(question.question_id, question);
+          } else {
+            option.disabled = true;
+            option.textContent = `${question.question_id} unavailable`;
+            option.title = question.load_error || "Question JSON could not be loaded.";
+          }
+
+          dom.questionSelect.append(option);
+        });
+
+        updateCopyPromptButton();
+      }
+
+      function handleQuestionSelect() {
+        const question = questionById.get(dom.questionSelect.value);
+
+        if (!question || !question.task) {
+          selectedQuestion = null;
+          updateCopyPromptButton();
+          return;
+        }
+
+        try {
+          const task = parseTask(question.task);
+          selectedQuestion = question;
+          dom.taskJson.value = JSON.stringify(question.task);
+          dom.predictionJson.value = "";
+          renderSummary(null);
+          clearRenderedCases();
+          renderTrainExamples(task.train);
+          clearErrors();
+          setCounts(task.train.length, task.test.length);
+          setStatus(`Loaded ${question.question_id}. Add prediction JSON to evaluate.`);
+        } catch (error) {
+          selectedQuestion = null;
+          showErrors([error instanceof Error ? error.message : "Question could not be loaded."]);
+          setStatus("Question could not be loaded.", true);
+        }
+
+        updateCopyPromptButton();
+      }
+
+      async function copySelectedPrompt() {
+        if (!selectedQuestion || !selectedQuestion.task) {
+          return;
+        }
+
+        try {
+          await copyText(buildQuestionPromptText(selectedQuestion));
+          setStatus(`Copied ${selectedQuestion.question_id} prompt.`);
+        } catch (error) {
+          setStatus("Prompt could not be copied.", true);
+        }
+      }
 
       function evaluate() {
         clearErrors();
@@ -818,6 +940,7 @@
       }
 
       function clearAll() {
+        clearSelectedQuestion();
         dom.taskJson.value = "";
         dom.predictionJson.value = "";
         renderSummary(null);
@@ -838,13 +961,14 @@
         try {
           const parsed = JSON.parse(raw);
           const task = parseTask(parsed);
-          dom.taskJson.value = JSON.stringify(parsed, null, 2);
+          clearSelectedQuestion();
+          dom.taskJson.value = JSON.stringify(parsed);
           dom.predictionJson.value = "";
           renderSummary(null);
+          clearRenderedCases();
           renderTrainExamples(task.train);
           clearErrors();
           setCounts(task.train.length, task.test.length);
-          clearRenderedCases();
           setStatus("Loaded Creator task. Add prediction JSON to evaluate.");
         } catch (error) {
           setStatus("Creator task could not be loaded.", true);
@@ -862,6 +986,59 @@
         } catch (error) {
           throw new Error(`${label} must be valid JSON.`);
         }
+      }
+
+      function buildQuestionPromptText(question) {
+        const promptTask = {
+          train: question.task.train.map((pair) => ({
+            input: pair.input,
+            output: pair.output
+          })),
+          test: question.task.test.map((pair) => ({
+            input: pair.input,
+            output: OUTPUT_PLACEHOLDER
+          }))
+        };
+        const taskText = JSON.stringify(promptTask).split(`"${OUTPUT_PLACEHOLDER}"`).join("[[?]]");
+        return `${PROMPT_HEADER} Question: ${question.question_id} ${taskText}`;
+      }
+
+      async function copyText(text) {
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+          try {
+            await navigator.clipboard.writeText(text);
+            return;
+          } catch (error) {
+            // Some browsers expose Clipboard API but still block writes.
+          }
+        }
+
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "fixed";
+        textarea.style.left = "-9999px";
+        textarea.style.top = "0";
+        document.body.append(textarea);
+        textarea.select();
+
+        try {
+          if (!document.execCommand("copy")) {
+            throw new Error("Copy command failed.");
+          }
+        } finally {
+          textarea.remove();
+        }
+      }
+
+      function clearSelectedQuestion() {
+        selectedQuestion = null;
+        dom.questionSelect.value = "";
+        updateCopyPromptButton();
+      }
+
+      function updateCopyPromptButton() {
+        dom.copyPromptButton.disabled = !selectedQuestion;
       }
 
       function parseTask(value) {
