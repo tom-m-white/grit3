@@ -78,6 +78,10 @@ const MODEL_ESTIMATE_CONFIGS: ModelEstimateConfig[] = [
 
 const MODEL_RELEASE_DATE_CONFIGS: ModelReleaseDateConfig[] = [
   {
+    aliases: ["claude fable 5", "fable 5"],
+    releaseDate: "2026-06-09"
+  },
+  {
     aliases: ["claude opus 4 8"],
     releaseDate: "2026-05-28"
   },
