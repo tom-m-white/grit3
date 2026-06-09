@@ -259,4 +259,22 @@ describe("results data", () => {
     expect(model.summary.validationIssueCount).toBe(2);
     expect(model.summary.validationQuestionCount).toBe(1);
   });
+
+  it("averages recomputed cell scores instead of sheet-entered accuracy", () => {
+    const csv = [
+      ",,Correct?,,Seconds,,Dollars,,Tokens,,Cell Accuracy,,",
+      "Model:,Question 1,,,,,,,,,,,",
+      "avg fixture,Question 2,,,,,,,,,,,",
+      ",Question 3,1,Question Time 3,1,Question Cost 3,,Question Tokens 3,,Cell Accuracy 3,100%,Output 3,\"{\"\"output\"\": [[1,0]]}\"",
+      ",Question 4,1,Question Time 4,1,Question Cost 4,,Question Tokens 4,,Cell Accuracy 4,100%,Output 4,\"{\"\"output\"\": [[1,1,0]]}\""
+    ].join("\n");
+
+    const model = parseModelCsv("avg.csv", csv, testProfile(), {
+      q3: [[[1, 1]]],
+      q4: [[[1, 1, 1]]]
+    });
+
+    expect(model.summary.computedCellScoreCount).toBe(2);
+    expect(model.summary.averageComputedCellScorePercent).toBe(58.3333);
+  });
 });

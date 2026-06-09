@@ -152,6 +152,8 @@ export interface ModelSummary {
   correctCount: number;
   wrongCount: number;
   notEvaluatedCount: number;
+  computedCellScoreCount: number;
+  averageComputedCellScorePercent: number | null;
   correctWeight: number;
   evaluatedWeight: number;
   totalWeight: number;
@@ -247,6 +249,8 @@ export function summarizeModelResults(
   let correctCount = 0;
   let wrongCount = 0;
   let notEvaluatedCount = 0;
+  let computedCellScoreCount = 0;
+  let computedCellScoreTotal = 0;
   let correctWeight = 0;
   let evaluatedWeight = 0;
   let totalSeconds = 0;
@@ -264,6 +268,12 @@ export function summarizeModelResults(
     validationIssueCount += result.validationIssues.length;
     if (result.validationIssues.length > 0) {
       validationQuestionCount += 1;
+    }
+
+    const computedCellScore = computedCellScorePercent(result);
+    if (computedCellScore !== null) {
+      computedCellScoreCount += 1;
+      computedCellScoreTotal += computedCellScore;
     }
 
     if (result.status === "not_evaluated") {
@@ -292,6 +302,9 @@ export function summarizeModelResults(
     correctCount,
     wrongCount,
     notEvaluatedCount,
+    computedCellScoreCount,
+    averageComputedCellScorePercent:
+      computedCellScoreCount === 0 ? null : roundToFour(computedCellScoreTotal / computedCellScoreCount),
     correctWeight,
     evaluatedWeight,
     totalWeight,
@@ -306,6 +319,14 @@ export function summarizeModelResults(
     validationIssueCount,
     validationQuestionCount
   };
+}
+
+function computedCellScorePercent(result: QuestionResult): number | null {
+  const computed = result.computedValidation;
+  if (!computed || computed.totalCells <= 0) {
+    return null;
+  }
+  return ((computed.totalCells - computed.mismatches) / computed.totalCells) * 100;
 }
 
 export function summarizeQuestionWinRates(models: ModelResult[]): Record<QuestionId, QuestionWinRate> {

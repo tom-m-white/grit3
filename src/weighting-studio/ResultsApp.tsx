@@ -22,7 +22,13 @@ const QUESTION_WIN_RATES = summarizeQuestionWinRates(MODELS);
 const RELEASE_CHART_POINTS = buildReleaseDateChartPoints(MODELS);
 const COST_CHART_POINTS = buildCostChartPoints(MODELS);
 
-type SortKey = "evaluatedWeightedPercent" | "fullProgressPercent" | "coveragePercent" | "correctCount" | "totalDollars";
+type SortKey =
+  | "evaluatedWeightedPercent"
+  | "averageComputedCellScorePercent"
+  | "fullProgressPercent"
+  | "coveragePercent"
+  | "correctCount"
+  | "totalDollars";
 
 interface ChartPoint {
   id: string;
@@ -112,6 +118,7 @@ export function ResultsApp() {
                 <span>Sort</span>
                 <select value={sortKey} onChange={(event) => setSortKey(event.target.value as SortKey)}>
                   <option value="evaluatedWeightedPercent">Evaluated weighted</option>
+                  <option value="averageComputedCellScorePercent">Avg cell score</option>
                   <option value="fullProgressPercent">Full progress</option>
                   <option value="coveragePercent">Coverage</option>
                   <option value="correctCount">Correct count</option>
@@ -125,6 +132,7 @@ export function ResultsApp() {
                   <tr>
                     <th>Model</th>
                     <th>Eval weighted</th>
+                    <th>Avg cell score</th>
                     <th>Full progress</th>
                     <th>Coverage</th>
                     <th>Checks</th>
@@ -145,6 +153,9 @@ export function ResultsApp() {
                         </button>
                       </td>
                       <td>{formatNullablePercent(model.summary.evaluatedWeightedPercent)}</td>
+                      <td title={`${model.summary.computedCellScoreCount} recomputed question score(s)`}>
+                        {formatPreciseNullablePercent(model.summary.averageComputedCellScorePercent)}
+                      </td>
                       <td>
                         {model.summary.correctWeight}/{model.summary.totalWeight} ({model.summary.fullProgressPercent}%)
                       </td>
@@ -684,6 +695,10 @@ function statusSymbol(status: ResultStatus): string {
 
 function formatNullablePercent(value: number | null): string {
   return value === null ? "n/a" : `${value}%`;
+}
+
+function formatPreciseNullablePercent(value: number | null): string {
+  return value === null ? "n/a" : `${value.toFixed(4)}%`;
 }
 
 function formatQuestionWinRate(winRate: QuestionWinRate): string {
